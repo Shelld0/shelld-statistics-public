@@ -1,0 +1,16 @@
+Shelld Statistics Public Beta v1.0.1 - Windows 11 x64
+
+If you are an END USER:
+- Download ONLY the Windows Setup.exe from the author's official GitHub Releases.
+- Double-click it, complete the wizard, and launch Shelld Statistics.
+- Node.js and Python are NOT required.
+- MT5 auto-import requires the installed MetaTrader 5 desktop terminal, not Python.
+- Trading Journal, Backtest, Analytics, Plans and Export work without MT5.
+- This source ZIP is NOT an installer. Do not distribute the source ZIP as a consumer download.
+
+If you are the DEVELOPER:
+- Publish ONLY this clean Public Beta source in a new GitHub repo.
+- Run GitHub Actions -> Windows Installer -> Run workflow.
+- Download the built Setup.exe artifact; test it on clean Windows 11 before tag-based public release.
+- The GitHub Windows runner uses Node.js and Python 3.12 to BUILD the app; the final user needs neither.
+- Full instructions: ONE_CLICK_RELEASE_RU.md

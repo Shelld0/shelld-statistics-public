@@ -1,0 +1,64 @@
+{
+  "name": "shelld-statistics",
+  "version": "1.0.1",
+  "description": "Shelld Statistics Public Beta — single-install Windows trading journal with optional built-in MT5 bridge",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "npm run prepare:bridge && electron-builder",
+    "test": "node --test tests/*.cjs",
+    "prepare:bridge": "node scripts/prepare-mt5-bridge.js"
+  },
+  "dependencies": {
+    "sql.js": "^1.13.0",
+    "@fontsource/inter": "^5.2.5",
+    "@fontsource/jetbrains-mono": "^5.2.5"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.shelld.statistics.publicbeta",
+    "productName": "Shelld Statistics Public Beta",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "node_modules/sql.js/dist/sql-wasm.wasm",
+      "node_modules/sql.js/dist/sql-wasm.js",
+      "node_modules/@fontsource/inter/**/*",
+      "node_modules/@fontsource/jetbrains-mono/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src/assets/app-icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "asarUnpack": [
+      "node_modules/sql.js/dist/sql-wasm.wasm",
+      "src/mt5_bridge.py"
+    ],
+    "artifactName": "Shelld-Statistics-Public-Beta-${version}-Setup.${ext}",
+    "extraResources": [
+      {
+        "from": "vendor/mt5-bridge/shelld-mt5-bridge.exe",
+        "to": "mt5/shelld-mt5-bridge.exe"
+      }
+    ]
+  }
+}

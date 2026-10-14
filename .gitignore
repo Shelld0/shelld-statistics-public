@@ -1,0 +1,17 @@
+node_modules/
+release/
+dist/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-wal
+*.db-shm
+*.log
+*.tmp
+*.zip
+*.bin
+mt5-secret-*
+.env*
+__pycache__/
+*.pyc
+.DS_Store
