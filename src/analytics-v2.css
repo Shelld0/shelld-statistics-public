@@ -1,0 +1,72 @@
+/* Analytics 2.0 — compact, accessible trading-performance visualizations. */
+.analysis-v2-quality{padding:22px 25px;margin:2px 0 18px;border-radius:17px}
+.analysis-v2-quality-head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
+.analysis-v2-quality h3,.analysis-v2-head h3{font:750 18px/1.35 Inter,Arial,sans-serif;margin:4px 0 5px;color:var(--text)}
+.analysis-v2-quality p,.analysis-v2-head p{font:450 12px/1.65 Inter,Arial,sans-serif;color:var(--muted);margin:0;max-width:680px}
+.analysis-v2-quality-head>strong{font:750 33px/1.1 'JetBrains Mono',Consolas,monospace;white-space:nowrap}
+.analysis-v2-progress{width:100%;height:9px;border-radius:20px;background:var(--panel2);border:1px solid var(--border);overflow:hidden;margin:18px 0 10px}
+.analysis-v2-progress>span{display:block;width:0;height:100%;border-radius:20px;background:linear-gradient(90deg,#a1424f,#40cda4);transition:width .25s ease}
+.analysis-v2-quality-bottom{display:flex;gap:15px;justify-content:space-between;color:var(--muted);font:500 11px Inter,Arial;flex-wrap:wrap}
+.analysis-v2-panel{min-width:0;padding:23px 24px;border-radius:17px;margin-bottom:17px}
+.analysis-v2-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:19px}
+.analysis-v2-head h3{font-size:17px}
+.analysis-v2-head .eyebrow,.analysis-v2-quality .eyebrow{font-size:10px;color:var(--muted);letter-spacing:.12em}
+.analysis-v2-select{display:flex;gap:8px;align-items:center;font:600 11px Inter;color:var(--muted);white-space:nowrap}
+.analysis-v2-select select{border:1px solid var(--border);background:var(--panel2);border-radius:9px;color:var(--text);padding:8px 9px;font:600 11px Inter}
+.analysis-v2-heat-scroll{overflow:auto;max-width:100%;padding:2px 3px 8px}
+.analysis-v2-heat-grid{display:grid;grid-template-columns:38px repeat(var(--heat-columns),minmax(48px,1fr));gap:5px;min-width:max(590px,100%);align-items:center}
+.analysis-v2-day-label{font:700 11px Inter;color:var(--muted);text-align:center}
+.analysis-v2-hour-label{font:650 10px 'JetBrains Mono',monospace;text-align:center;color:var(--muted);padding:4px 0 7px}
+.analysis-v2-heat-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:48px;border:1px solid var(--border);border-radius:9px;color:var(--text);padding:6px 2px;transition:border-color .2s,transform .18s;background:var(--panel2)}
+.analysis-v2-heat-cell strong{font:650 11px 'JetBrains Mono',Consolas,monospace;white-space:nowrap}
+.analysis-v2-heat-cell small{font:450 9px Inter;color:var(--muted)}
+.analysis-v2-heat-cell:not(:disabled){cursor:pointer}
+.analysis-v2-heat-cell:not(:disabled):hover{border-color:var(--text);transform:translateY(-2px)}
+.analysis-v2-heat-cell:disabled{opacity:.5;cursor:default}
+.analysis-v2-heat-foot{display:flex;justify-content:flex-end;gap:20px;flex-wrap:wrap;margin-top:12px;color:var(--muted);font:500 10px Inter}
+.analysis-v2-heat-foot span{display:flex;align-items:center;gap:6px}
+.analysis-v2-swatch{display:block;width:9px;height:9px;border-radius:3px;background:#818898}.analysis-v2-swatch.positive{background:#31bd92}.analysis-v2-swatch.negative{background:#eb5269}
+.analysis-v2-hint{font:450 11px/1.5 Inter,Arial;color:var(--muted);margin:12px 0 0}
+.analysis-v2-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
+.analysis-v2-grid .analysis-v2-panel{height:auto}
+.analysis-v2-hist-bars{display:grid;gap:11px}
+.analysis-v2-hist-row{display:grid;grid-template-columns:75px minmax(0,1fr) 22px;gap:10px;align-items:center;color:var(--text);background:transparent;border:1px solid transparent;border-radius:8px;padding:5px;cursor:pointer;min-width:0;text-align:left}
+.analysis-v2-hist-row:hover:not(:disabled),.analysis-v2-dd-row:hover:not(:disabled){background:var(--hover);border-color:var(--border)}
+.analysis-v2-hist-row:disabled{opacity:.55;cursor:default}
+.analysis-v2-hist-label{font:600 11px 'JetBrains Mono',Consolas,monospace;white-space:nowrap}
+.analysis-v2-hist-row>strong{font:700 12px 'JetBrains Mono',Consolas,monospace;text-align:right}
+.analysis-v2-hist-track{display:block;height:10px;background:var(--panel2);border-radius:8px;overflow:hidden}
+.analysis-v2-hist-track>span{display:block;height:100%;min-width:0;border-radius:8px;background:#596174;transition:width .2s}
+.analysis-v2-hist-track>span.gain{background:#37c59a}.analysis-v2-hist-track>span.loss{background:#e35c71}
+.analysis-v2-hist-summary{display:flex;gap:8px;flex-wrap:wrap;font:500 11px Inter;color:var(--muted);margin-top:17px}.analysis-v2-hist-summary strong{color:var(--text)}
+.analysis-v2-direction{display:block;width:100%;padding:17px;border:1px solid var(--border);border-radius:12px;background:var(--panel2);color:var(--text);cursor:pointer;text-align:left;margin-bottom:10px}
+.analysis-v2-direction:disabled{cursor:default;opacity:.6}
+.analysis-v2-direction:hover:not(:disabled){border-color:#6a7385}
+.analysis-v2-direction>div:first-child{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.analysis-v2-direction>div:first-child>strong{font:750 23px 'JetBrains Mono',Consolas,monospace}
+.analysis-v2-dir-pill{border-radius:30px;background:#123e33;color:#51dbac;padding:6px 12px;font:700 11px Inter}.analysis-v2-dir-pill.short{background:#45212d;color:#ff8896}
+.analysis-v2-dir-stats{display:flex;gap:12px;flex-wrap:wrap;margin:15px 0 9px;font:550 11px Inter}.analysis-v2-direction>small{color:var(--muted);font:450 10px Inter}
+.analysis-v2-dd-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:20px}
+.analysis-v2-dd-overview>div{border:1px solid var(--border);border-radius:10px;padding:12px 10px;min-width:0}
+.analysis-v2-dd-overview span{display:block;color:var(--muted);font:600 10px Inter;min-height:30px}
+.analysis-v2-dd-overview strong{display:block;font:700 15px 'JetBrains Mono',Consolas,monospace;margin-top:5px}
+.analysis-v2-dd-list{display:grid;gap:8px}
+.analysis-v2-dd-row{display:grid;grid-template-columns:minmax(0,1fr) 32%;gap:10px;align-items:center;width:100%;background:transparent;border:1px solid transparent;color:var(--text);border-radius:9px;padding:9px 6px;cursor:pointer;text-align:left}
+.analysis-v2-dd-title b{display:block;font:700 12px 'JetBrains Mono',Consolas,monospace}
+.analysis-v2-dd-title small{display:block;color:var(--muted);font:450 10px Inter;margin-top:4px}
+.analysis-v2-empty{color:var(--muted);font:450 12px/1.6 Inter;padding:20px 0}
+.analysis-v2-model-scroll{overflow:auto;max-width:100%}
+.analysis-v2-model-table{width:100%;font:500 11px Inter;white-space:nowrap;min-width:470px}
+.analysis-v2-model-table th{font-size:9px;padding:9px 7px;border-top:0}
+.analysis-v2-model-table td{padding:10px 7px}
+.analysis-v2-model-link{background:transparent;border:0;color:var(--text);font:700 11px Inter;cursor:pointer;padding:0;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.analysis-v2-model-link:hover{text-decoration:underline}
+.analysis-v2-panel .gain{color:var(--green,#45d5a5)}.analysis-v2-panel .loss{color:var(--red,#f06b7a)}
+@media(max-width:1050px){.analysis-v2-grid{grid-template-columns:1fr}}
+@media(max-width:680px){.analysis-v2-quality-head,.analysis-v2-head{flex-wrap:wrap}.analysis-v2-quality,.analysis-v2-panel{padding:17px}.analysis-v2-dd-overview{grid-template-columns:1fr}.analysis-v2-dd-overview span{min-height:auto}.analysis-v2-heat-foot{justify-content:flex-start}}
+@media(prefers-reduced-motion:reduce){.analysis-v2-heat-cell,.analysis-v2-progress>span{transition:none}}
+
+/* Kept panels from Analytics 2.0 without additional Heatmap/R histogram widgets. */
+.analysis-v2-duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:0 0 20px}
+.analysis-v2-duo .analysis-v2-panel{min-width:0;overflow:hidden}
+@media(max-width:1100px){.analysis-v2-duo{grid-template-columns:1fr}}

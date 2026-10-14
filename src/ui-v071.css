@@ -1,0 +1,81 @@
+/* Shelld Statistics 0.7.1 — component fixes without touching user data */
+/* Account switch: prevent the system square focus border and respect radii. */
+.account-switch {
+  display:flex!important; align-items:stretch!important; gap:0!important;
+  border:1px solid var(--border,#30343d)!important; padding:3px!important;
+  border-radius:13px!important; overflow:hidden; min-height:43px;
+  box-shadow:none!important; outline:0!important;
+}
+.account-switch select {
+  appearance:none!important; -webkit-appearance:none!important; flex:1 1 auto;
+  padding:7px 22px 7px 11px!important;
+  border:0!important;border-radius:9px!important;outline:0!important;
+  background-color:transparent!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23969eab' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")!important;
+  background-repeat:no-repeat!important;background-position:right 4px center!important;
+}
+.account-switch:focus-within{border-color:#647083!important;box-shadow:0 0 0 2px rgba(115,130,152,.14)!important}
+.account-switch .account-manage {
+  appearance:none!important;min-width:37px;height:auto;display:grid;place-items:center;
+  border:0!important;border-left:1px solid var(--border)!important;
+  border-radius:0 9px 9px 0!important;outline:0!important;
+  box-shadow:none!important;color:var(--text);background:transparent!important;
+}
+.account-switch .account-manage:hover{background:var(--hover)!important}
+.account-switch .account-manage:focus-visible {box-shadow:inset 0 0 0 2px #8796ae!important;border-radius:9px!important}
+/* Fast date editor for both backtest and journal — no native browser date popup. */
+#tradeModal .trade-date-btn{width:100%;min-height:44px;display:flex;align-items:center;justify-content:space-between;
+  gap:9px;padding:11px 13px;color:var(--muted);background:var(--panel2);
+  border:1px solid var(--border);border-radius:11px;cursor:pointer;text-align:left;font:600 12px 'JetBrains Mono',Consolas,monospace;white-space:nowrap}
+#tradeModal .trade-date-btn.is-set{color:var(--text)}
+#tradeModal .trade-date-btn:hover,#tradeModal .trade-date-btn:focus-visible{border-color:#8795ac;background:var(--hover)}
+/* Separate responsive column widths; prevent placeholder spilling into the next cell. */
+#backtestWorkspace .backtest-table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+#backtestWorkspace .backtest-table th:nth-child(1){width:3%!important}
+#backtestWorkspace .backtest-table th:nth-child(2),#backtestWorkspace .backtest-table th:nth-child(3){width:10.2%!important}
+#backtestWorkspace .backtest-table th:nth-child(4){width:7%!important}
+#backtestWorkspace .backtest-table th:nth-child(5){width:8%!important}
+#backtestWorkspace .backtest-table th:nth-child(6){width:7.7%!important}
+#backtestWorkspace .backtest-table th:nth-child(7){width:7%!important}
+#backtestWorkspace .backtest-table th:nth-child(8){width:5%!important}
+#backtestWorkspace .backtest-table th:nth-child(9){width:6.2%!important}
+#backtestWorkspace .backtest-table th:nth-child(10){width:7%!important}
+#backtestWorkspace .backtest-table th:nth-child(11){width:9%!important}
+#backtestWorkspace .backtest-table th:nth-child(12){width:10%!important}
+#backtestWorkspace .backtest-table th:nth-child(13){width:6.5%!important}
+#backtestWorkspace .backtest-table th:nth-child(14){width:2.2%!important}
+#backtestWorkspace .backtest-table th,#backtestWorkspace .backtest-table td{min-width:0!important;overflow:hidden!important}
+#backtestWorkspace .backtest-table .bt-datetime-btn{box-sizing:border-box!important;width:100%!important;
+  min-width:0!important;max-width:100%!important;gap:4px;padding:9px 7px!important}
+#backtestWorkspace .backtest-table .bt-datetime-btn span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0;display:block}
+#backtestWorkspace .backtest-table .bt-datetime-btn .bt-date-icon{flex:0 0 13px}
+#backtestWorkspace .backtest-table .bt-inline-notes{width:100%;min-width:0;min-height:43px;max-height:190px;
+  border:1px solid var(--border);border-radius:10px;background:var(--panel2);color:var(--text);
+  padding:8px 9px;font:500 11px/1.45 Inter,sans-serif;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere;outline:0}
+#backtestWorkspace .backtest-table .bt-inline-notes:focus{border-color:#8795ad;background:var(--panel)}
+#backtestWorkspace .backtest-table .row-details{min-width:0;padding:8px 5px;font-size:10px;white-space:normal;line-height:1.25}
+/* Analytics are functional, clickable drilldowns. */
+.analysis-breakdown-row {width:100%;display:block;text-align:left;background:transparent;cursor:pointer;
+  color:inherit;border:1px solid transparent;padding:10px 11px;margin:0 0 9px;border-radius:11px;transition:background .16s,border .16s}
+.analysis-breakdown-row:hover,.analysis-breakdown-row:focus-visible,.analysis-breakdown-row.chosen{
+  background:var(--panel2);border-color:var(--border);outline:none}
+.analysis-breakdown-row.chosen{border-color:#75849b}
+.analysis-breakdown-top{display:flex!important}
+.analysis-track{display:block!important}
+.analysis-open-hint{display:block;text-align:right;color:var(--muted);font-size:10px;margin-top:5px;opacity:.45}
+.analysis-breakdown-row:hover .analysis-open-hint{opacity:1;color:var(--text)}
+.analysis-detail{padding:20px 24px;margin-bottom:20px;border:1px solid var(--border);border-radius:17px}
+.analysis-detail-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
+.analysis-detail-head h3{font:750 20px Inter;margin:5px 0 3px}
+.analysis-detail-head p{margin:0;color:var(--muted);font-size:12px}
+.analysis-detail-list{display:grid;gap:5px;max-height:280px;overflow:auto}
+.analysis-trade-line{width:100%;display:grid;grid-template-columns:1.1fr 1fr .6fr .8fr 25px;align-items:center;text-align:left;
+  gap:12px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 15px;color:var(--text);
+  cursor:pointer;font:600 11px 'JetBrains Mono',monospace}
+.analysis-trade-line:hover{border-color:#71809c}
+.analysis-detail .win{color:var(--green,#33d1a2)}.analysis-detail .loss{color:var(--red,#ff647b)}
+@media (max-width:1250px){#backtestWorkspace .workspace-panel{padding:14px!important}
+ #backtestWorkspace .backtest-table th{font-size:9px!important}
+ #backtestWorkspace .backtest-table td{padding:9px 4px!important}
+ #backtestWorkspace .backtest-table .bt-side-btn{padding:6px 4px!important}
+ #backtestWorkspace .backtest-table .tag-chip{font-size:9px!important}}

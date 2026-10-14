@@ -1,0 +1,38 @@
+/* v0.7.3 — Account deletion; scoped to the account manager. */
+.account-modal-list .account-card{padding:0;min-width:174px;min-height:100px;overflow:hidden;position:relative;isolation:isolate}
+.account-card .account-card-main{padding:14px 42px 14px 16px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;
+  background:transparent;border:0;color:var(--text);text-align:left;cursor:pointer;width:100%;min-height:100px;line-height:1.35}
+.account-card .account-card-main strong{font:700 14px Inter,sans-serif;max-width:100%;overflow-wrap:anywhere}
+.account-card .account-card-main span{font:500 11px Inter,sans-serif;color:var(--muted)}
+.account-card .account-card-main em{font:700 10px Inter,sans-serif;color:var(--green,#48dbab);font-style:normal}
+.account-card .account-card-main:hover{background:var(--hover)}
+.account-card .account-card-delete{position:absolute;right:8px;top:9px;width:30px;height:30px;display:grid;place-items:center;
+  background:transparent;border:1px solid transparent;border-radius:9px;color:var(--muted);cursor:pointer;transition:color .16s,background .16s,border-color .16s}
+.account-card .account-card-delete:hover{background:rgba(235,82,94,.12);border-color:rgba(235,82,94,.3);color:#ff818d}
+.account-card .account-card-delete:focus-visible{outline:2px solid #e6a6ae;outline-offset:1px}
+.account-card .account-card-delete:disabled{opacity:.25;cursor:not-allowed}
+.account-edit-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.account-edit-actions .account-actions-spacer{flex:1}
+.account-edit-actions #deleteSelectedAccountBtn{font:600 11px Inter,sans-serif;white-space:nowrap}
+.account-edit-actions #deleteSelectedAccountBtn:disabled{opacity:.35;cursor:not-allowed}
+.account-delete-modal{width:min(530px,96vw)}
+.account-delete-warning{border:1px solid rgba(220,74,86,.32);background:rgba(190,62,77,.075);border-radius:13px;padding:17px 18px;margin:0 0 20px}
+.account-delete-warning strong{display:block;font:750 16px Inter,sans-serif;color:var(--text);overflow-wrap:anywhere}
+.account-delete-warning p{font:450 12px/1.65 Inter,sans-serif;color:var(--muted);margin:9px 0 0}
+.account-delete-warning p b{color:var(--text);font-weight:700}
+.account-delete-confirm-label{font:650 12px Inter,sans-serif;color:var(--muted);display:block;margin-bottom:8px}
+#accountDeleteNameInput{width:100%;padding:13px 14px;border:1px solid var(--border);background:var(--panel2);color:var(--text);
+  border-radius:10px;font:600 13px Inter,sans-serif;outline:none}
+#accountDeleteNameInput:focus{border-color:#df8e96;box-shadow:0 0 0 2px #c562731b}
+.account-delete-confirm{border:1px solid #b55162;background:#7d303e;color:#fff;font:750 12px Inter,sans-serif;
+  border-radius:9px;padding:11px 16px;cursor:pointer;transition:background .16s}
+.account-delete-confirm:not(:disabled):hover{background:#aa394d}
+.account-delete-confirm:disabled{opacity:.36;cursor:not-allowed}
+.account-delete-backup{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:13px;
+  margin-top:12px;background:var(--panel2);border:1px solid var(--border);border-radius:12px}
+.account-delete-backup strong{grid-column:1/-1;font:700 12px Inter,sans-serif}
+.account-delete-backup code{font:500 11px 'JetBrains Mono',Consolas,monospace;color:var(--muted);min-width:0;overflow-wrap:anywhere;user-select:text}
+.account-delete-backup button{white-space:nowrap}
+:root.light .account-delete-warning{background:#fff4f4;border-color:#e3b8be}
+:root.light .account-delete-warning p{color:#705f67}
+@media(max-width:790px){.account-edit-actions .account-actions-spacer{display:none}.account-edit-actions #deleteSelectedAccountBtn{margin-right:auto}.account-delete-backup{grid-template-columns:1fr}}

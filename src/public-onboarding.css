@@ -1,0 +1,13 @@
+/* One-time public onboarding: native existing modal styling. */
+.welcome-modal{width:min(600px,92vw)!important;max-height:88vh;overflow:auto}
+.welcome-steps{display:grid;gap:11px;margin:20px 0 24px}
+.welcome-steps>div{display:flex;align-items:flex-start;gap:13px;background:var(--panel2,#16191f);border:1px solid var(--border,#2a3038);border-radius:13px;padding:13px}
+.welcome-steps b{color:#fa6673;font:700 14px 'JetBrains Mono',monospace}
+.welcome-steps span{display:grid;gap:5px}.welcome-steps strong{font:700 13px Inter,sans-serif}.welcome-steps small,.welcome-foot{font:450 12px Inter,sans-serif;color:var(--muted,#9fa8b7);line-height:1.65}
+.welcome-buttons{flex-wrap:wrap}.welcome-foot{display:block;margin:15px 0 0}
+
+/* Hide optional developer-only MT5 runtime override during normal onboarding. */
+.mt5-advanced {border:1px solid var(--border, #252b36);border-radius:10px;padding:12px 14px;background:rgba(130,140,160,.045);}
+.mt5-advanced summary{cursor:pointer;color:var(--muted,#929baa);font-size:12px;line-height:1.45;user-select:none;}
+.mt5-advanced[open] summary{margin-bottom:12px;}
+.mt5-advanced label{display:block;width:100%;}

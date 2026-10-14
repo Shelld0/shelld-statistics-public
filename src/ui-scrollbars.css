@@ -1,0 +1,22 @@
+/* Shelld Statistics: thin, transparent scrollbars across panes, dialogs and tables. */
+:root {
+  --shelld-scroll-thumb:rgba(166,178,196,.26);
+  --shelld-scroll-hover:rgba(193,205,220,.46);
+}
+:root.light {
+  --shelld-scroll-thumb:rgba(78,89,105,.29);
+  --shelld-scroll-hover:rgba(65,79,101,.46);
+}
+html, body, * { scrollbar-width:thin; scrollbar-color:var(--shelld-scroll-thumb) transparent; }
+::-webkit-scrollbar { width:7px; height:7px; background:transparent; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background:transparent; border:0; }
+::-webkit-scrollbar-thumb {
+  background-color:var(--shelld-scroll-thumb);
+  border-radius:999px;
+  border:2px solid transparent;
+  background-clip:padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color:var(--shelld-scroll-hover); }
+::-webkit-scrollbar-thumb:active { background-color:rgba(229,236,245,.58); }
+::-webkit-scrollbar-button { display:none; height:0; width:0; }
+@media (prefers-reduced-motion: reduce) { ::-webkit-scrollbar-thumb { transition:none; } }

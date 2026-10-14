@@ -1,0 +1,34 @@
+/* Result snapshots inside both trade editors and their details. */
+.result-gallery-section{margin:25px 0 4px;padding:20px 0 0;border-top:1px solid var(--border);min-width:0}
+.result-gallery-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:14px}
+.result-gallery-heading h3{font:750 17px/1.35 Inter,Segoe UI,sans-serif;margin:0 0 6px;color:var(--text)}
+.result-gallery-heading p{font:500 11px/1.6 Inter,Segoe UI,sans-serif;color:var(--muted);margin:0;max-width:520px}
+.result-gallery-count{font:600 10px 'JetBrains Mono',Consolas,monospace;color:var(--muted);white-space:nowrap;margin-top:4px}
+.result-gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;align-items:stretch}
+.result-gallery-tile{display:flex;flex-direction:column;gap:8px;padding:9px;background:var(--panel2);border:1px solid var(--border);border-radius:13px;min-width:0;position:relative}
+.result-gallery-tile img{display:block;width:100%;height:144px;object-fit:contain;border-radius:9px;background:#090b10;cursor:zoom-in;transition:filter .18s}
+.result-gallery-tile img:hover{filter:brightness(1.12)}
+.result-gallery-tile-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;font:600 10px 'JetBrains Mono',Consolas,monospace;color:var(--muted)}
+.result-gallery-remove{cursor:pointer;border:1px solid var(--border);border-radius:7px;background:var(--panel);color:var(--muted);padding:3px 8px;font-size:14px}
+.result-gallery-remove:hover{color:var(--red);border-color:var(--red)}
+.result-gallery-add{cursor:pointer;min-height:195px;border:1px dashed #505969;border-radius:13px;background:transparent;color:var(--text);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;transition:background .15s,border-color .15s}
+.result-gallery-add:hover,.result-gallery-section.drag-over .result-gallery-add{background:var(--hover);border-color:#8b94a7}
+.result-gallery-add span{font:700 28px Inter,sans-serif;color:var(--muted)}
+.result-gallery-add strong{font:700 12px Inter,sans-serif}
+.result-gallery-add small{font:500 10px Inter,sans-serif;color:var(--muted);text-align:center}
+.result-gallery-hint{font:500 11px Inter,sans-serif;color:var(--muted);margin:13px 0 0}
+#tradeForm{width:min(760px,96vw)}
+@media(max-width:580px){.result-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.result-gallery-heading{flex-wrap:wrap}.result-gallery-tile img{height:118px}}
+
+/* Hover or keyboard focus defines the clipboard destination, not the last-opened gallery. */
+.result-gallery-add.paste-hover,
+.capture-add.paste-hover,
+.capture-card.paste-hover,
+.upload-wide-btn.paste-hover {
+  border-color:var(--accent,#a9b8cd)!important;
+  background:color-mix(in srgb,var(--hover,#17191f) 83%,#d55d6c 17%)!important;
+  box-shadow:0 0 0 2px color-mix(in srgb,#d76572 28%,transparent);
+}
+.result-gallery-add:focus-visible,
+.capture-add:focus-visible,
+.upload-wide-btn:focus-visible { outline:2px solid #b77582;outline-offset:3px; }

@@ -1,0 +1,41 @@
+/* v0.7 account switching + analytics. Final intentional override layer. */
+.account-switch{display:flex;align-items:center;min-width:0;gap:5px;padding:4px 6px;background:var(--panel2,#14161a);border:1px solid var(--border,#292c35);border-radius:12px;max-width:250px}
+.account-switch select{min-width:110px;max-width:176px;padding:7px 4px;background:transparent;color:var(--text,#ecf0f5);border:none;outline:none;font:700 11px Inter,sans-serif;text-overflow:ellipsis}
+.account-switch select option{background:#17191e;color:#f5f6f8}
+.account-manage{background:transparent;border-left:1px solid var(--border,#323641);color:var(--muted,#999);font-size:19px;line-height:24px;padding:4px 8px;cursor:pointer}
+.account-manage:hover{color:var(--text,#fff)}
+.account-modal{width:min(920px,95vw)!important;max-height:92vh;overflow:auto}
+.account-modal-list{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0 24px}
+.account-card{position:relative;min-width:175px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;padding:13px 17px;border-radius:15px;color:var(--text,#f2f4f8);background:var(--panel2,#15181e);border:1px solid var(--border,#2d303a);cursor:pointer;text-align:left}
+.account-card:hover,.account-card.selected{border-color:#7b8394}
+.account-card strong{font:700 14px Inter,sans-serif}
+.account-card span{font:500 11px Inter,sans-serif;color:var(--muted,#9ba2ae)}
+.account-card em{font:700 10px Inter,sans-serif;color:#48dbab;font-style:normal}
+.account-edit-form{border-top:1px solid var(--border,#30343c);padding-top:18px}
+.account-edit-form h3{font:700 16px Inter,sans-serif;margin-bottom:16px}
+.account-secret-notice{color:var(--muted,#949daa);line-height:1.5;font-size:11px;padding:10px 0}
+.mt5-secure-hint{display:block;margin:5px 0 12px;color:var(--muted,#9398a3);font-size:11px}
+.analytics-period-label{font:650 12px Inter,sans-serif;color:var(--muted,#a8aeb7);display:flex;gap:10px;align-items:center}
+.analytics-period-label select{color:var(--text,#f2f4f8);background:var(--panel2,#1c2029);border:1px solid var(--border,#3a3f47);border-radius:10px;padding:10px}
+.analysis-note{padding:13px 17px;border:1px solid var(--border,#353943);background:var(--panel2,#13171d);border-radius:13px;margin-bottom:18px;color:var(--muted,#999faa);line-height:1.5;font-size:12px}
+.analysis-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0 26px}
+.analysis-stat{min-width:0;border:1px solid var(--border,#30343b);background:var(--panel,#101216);border-radius:17px;padding:19px 17px;display:flex;flex-direction:column;gap:9px}
+.analysis-stat>span{font:750 11px Inter,sans-serif;color:var(--muted,#9da5b4);letter-spacing:.03em}
+.analysis-stat strong{font:700 clamp(20px,2.5vw,29px) 'JetBrains Mono',monospace;color:var(--text,#eceff4);word-break:break-word}
+.analysis-stat small{font:450 11px Inter,sans-serif;color:var(--muted,#9298a1);line-height:1.5}
+.analysis-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.analysis-panel{padding:23px;min-width:0;border-radius:17px}
+.analysis-panel h3{font:750 17px Inter,sans-serif;margin:0 0 6px}
+.analysis-panel>p{font:450 12px Inter,sans-serif;color:var(--muted,#9ca3b0);margin:0 0 22px}
+.analysis-breakdown-row{margin-bottom:16px}
+.analysis-breakdown-top{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-bottom:8px;font:500 11px Inter,sans-serif}
+.analysis-breakdown-top strong{color:var(--text,#eef0f5);font-weight:750;min-width:0;overflow-wrap:anywhere}
+.analysis-breakdown-top span{color:var(--muted,#9ca2ac);white-space:nowrap}
+.analysis-breakdown-top .loss{color:#fb7785}.analysis-breakdown-top .win{color:#3fd4a2}
+.analysis-track{height:7px;background:var(--panel2,#20242c);border-radius:7px;overflow:hidden}
+.analysis-bar{height:100%;max-width:100%;border-radius:7px;transition:width .23s ease}.analysis-bar.positive{background:linear-gradient(90deg,#146c55,#3ecea5)}.analysis-bar.negative{background:linear-gradient(90deg,#833246,#fa6e7c)}
+.analysis-empty{color:var(--muted,#9298a1);padding:25px 0;font-size:12px}
+@media (max-width:1150px){.analysis-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.account-switch{max-width:165px}.account-switch select{max-width:110px}}
+@media (max-width:850px){.analysis-panels{grid-template-columns:1fr}.top-actions{flex-wrap:wrap}.analysis-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+:root.light .account-switch,:root.light .analysis-stat,:root.light .analysis-panel,:root.light .account-card{background:#f8f9fc}
+:root.light .account-switch select,:root.light .analytics-period-label select{color:#23272f}

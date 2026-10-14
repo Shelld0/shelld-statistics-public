@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html lang="ru"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Shelld Statistics</title><link href="styles.css" rel="stylesheet"/><link href="ui-v069.css" rel="stylesheet"/><link href="account-analytics.css" rel="stylesheet"/><link href="analytics-v2.css" rel="stylesheet"/><link href="ui-v071.css" rel="stylesheet"/><link href="ui-v072.css" rel="stylesheet"/><link href="ui-v073.css" rel="stylesheet"/><link href="export-studio.css" rel="stylesheet"/><link href="result-gallery.css" rel="stylesheet"/><link href="ui-scrollbars.css" rel="stylesheet"/><link href="image-workspace.css" rel="stylesheet"/><link href="public-onboarding.css" rel="stylesheet"/></head>
+<body>
+<header class="topbar">
+<div class="brand"><div class="brand-mark"><img src="assets/logo.svg" alt="Shelld Statistics logo"/></div><span>Shelld <b>Statistics</b></span></div>
+<nav class="tabs">
+<button class="nav active" data-page="dashboard">Dashboard</button>
+<button class="nav" data-page="journal">Trading Journal</button>
+<button class="nav" data-page="analytics">Analytics</button>
+<button class="nav" data-page="plans">Trading Plans</button>
+<button class="nav" data-page="backtest">Backtest</button>
+<button class="nav" data-page="studio">Export Studio</button>
+</nav>
+<div class="top-actions"><div class="account-switch"><select id="accountSelect" aria-label="Выбранный торговый счёт"><option>Мой счёт</option></select><button type="button" id="manageAccountsBtn" class="account-manage" title="Управление торговыми счетами">＋</button></div><button class="mt5-quick" type="button" id="mt5OpenBtn"><span class="mt5-signal" id="mt5Signal"></span><span id="mt5QuickLabel">MT5 Connect</span></button><span class="local"><i></i> SQLite · локально</span><button class="icon-btn" id="settingsBtn" title="Настройки расчётов и BE" aria-label="Настройки">⚙</button><button class="icon-btn" id="themeBtn" title="Переключить тему">◐</button><button class="backup-btn" id="backupBtn">▤ Backup</button></div>
+</header>
+<main class="app-main">
+<section class="page active" id="dashboard">
+<div class="page-heading"><div><h1>Dashboard</h1><p>Обзор торговых результатов и эффективности</p></div><button class="primary" data-add="">＋ Add Trade</button></div>
+<div class="chart-card panel"><div class="panel-title"><h3>Equity Curve</h3><div class="chart-actions"><span id="chartCount">0 trades</span></div></div>
+    
+    <div class="chart-wrap interactive-chart"><svg aria-label="Equity curve" id="equityChart" preserveAspectRatio="xMidYMid meet" preserveaspectratio="none" role="img" viewBox="0 0 1000 520" viewbox="0 0 900 300"></svg><button class="equity-tooltip" hidden="" id="equityChartTooltip" title="Открыть сделку" type="button"></button></div><div class="chart-foot visually-hidden"><span>0</span><span>Последовательность сделок</span><span id="chartEnd">0%</span></div></div>
+
+<div class="metrics">
+<article class="metric"><span>TOTAL GAIN (%)</span><strong class="green" id="totalGain">+0.0%</strong><small id="tradeCount">0 сделок</small></article>
+<article class="metric"><span>WIN RATE</span><strong id="winRate">0.0%</strong><small id="winLoss">0W / 0L</small></article>
+<article class="metric"><span>AVERAGE WINNING TRADE</span><strong id="avgWin">0.0R</strong><small>только по прибыльным</small></article>
+</div>
+
+<div class="stats-grid">
+<article class="panel stat-box total-trades-card"><div class="total-trades-left"><span class="card-kicker">TOTAL TRADES</span><strong id="totalTrades">0</strong></div><div class="trade-tallies"><b class="green" id="winning">● Winning: 0</b><b class="red" id="losing">● Losing: 0</b></div></article>
+<div class="streaks-group"><h3 class="card-kicker">STREAKS</h3><div class="streaks"><div class="panel"><small>MAX WIN STREAK</small><strong class="green" id="maxWin">0</strong></div><div class="panel"><small>MAX LOSE STREAK</small><strong class="red" id="maxLoss">0</strong></div></div></div>
+<article class="panel highlight-row"><div class="highlight-left"><span class="card-kicker">BEST TRADE</span><div class="highlight-meta" id="bestTradeMeta">—</div></div><strong class="green" id="bestTrade">—</strong></article>
+<article class="panel highlight-row"><div class="highlight-left"><span class="card-kicker">BEST ASSET</span><div class="highlight-meta" id="bestAssetMeta">—</div></div><strong class="green" id="bestAsset">—</strong></article>
+</div>
+<h3 class="section-title">Assets Summary</h3><div class="asset-summary" id="assetSummary"></div>
+<div class="panel table-panel"><div class="panel-title"><h3>Последние сделки</h3><button class="text-btn" data-goto="journal">Все сделки →</button></div><div class="table-scroll"><table><thead><tr><th>#</th><th>Открытие</th><th>Закрытие</th><th>АКТИВ</th><th>DIRECTION</th><th>МОДЕЛЬ</th><th>RESULT</th><th>GAIN</th></tr></thead><tbody id="recentRows"></tbody></table></div></div>
+</section>
+<section class="page" id="journal">
+<div class="page-heading"><div><h1>Trading Journal</h1><p>Личный журнал сделок с историей и аналитикой</p></div><button class="primary" data-add="">＋ Add Trade</button></div>
+<div aria-label="Обзор журнала" class="journal-subnav" role="tablist">
+<button class="subnav-btn active" data-journal-view="overview">Overview</button>
+
+<button class="subnav-btn" data-journal-view="monthly">Monthly Review</button>
+<button class="subnav-btn" data-journal-view="quarterly">Quarterly Review</button>
+<button class="subnav-btn" data-journal-view="calendar">Calendar</button>
+</div><div class="period-nav is-hidden" id="periodNav"><div class="period-switch"><button aria-label="Предыдущий период" id="periodPrev" type="button">‹</button><strong id="periodLabel">Q3 2026</strong><button aria-label="Следующий период" id="periodNext" type="button">›</button></div><span id="periodCount">0 trades</span></div>
+<div class="filter-row journal-filters"><label class="filter-label">FILTERS</label><select id="assetFilter"><option value="">Все активы</option><option>EURUSD</option><option>GBPUSD</option><option>GER40</option><option>USDJPY</option><option>XAUUSD</option><option>US100</option></select><select id="modelFilter"><option value="">Все модели</option></select><select id="resultFilter"><option value="">Все результаты</option><option>WIN</option><option>LOSS</option><option>BE</option><option>OPEN</option></select><input id="searchTrades" placeholder="Поиск…"/><button class="secondary" id="csvBtn">↓ CSV</button></div>
+<div class="journal-view active" id="journalOverview">
+<div class="panel chart-card journal-chart"><div class="panel-title"><h3>Equity Curve</h3><div class="chart-actions"><span id="journalChartCount">0 trades</span></div></div>
+    
+    <div class="chart-wrap interactive-chart"><svg aria-label="Equity curve" id="journalEquityChart" preserveAspectRatio="xMidYMid meet" preserveaspectratio="none" role="img" viewBox="0 0 1000 520" viewbox="0 0 900 300"></svg><button class="equity-tooltip" hidden="" id="journalEquityChartTooltip" title="Открыть сделку" type="button"></button></div><div class="chart-foot visually-hidden"><span>0%</span><span>Последовательность сделок</span><span id="journalChartEnd">0.0%</span></div></div>
+<div class="metrics journal-metrics"><article class="metric"><span>TOTAL GAIN (%)</span><strong class="green" id="journalGain">+0.0%</strong><small id="journalTradeCount">0 сделок</small></article><article class="metric"><span>WIN RATE</span><strong id="journalWinRate">0.0%</strong><small id="journalWinLoss">0W / 0L</small></article><article class="metric"><span>AVERAGE WINNING TRADE</span><strong id="journalAvgWin">0.0R</strong><small>только по прибыльным</small></article></div>
+
+<div class="journal-detail-grid"><article class="panel stat-box total-trades-card"><div class="total-trades-left"><span class="card-kicker">TOTAL TRADES</span><strong id="journalTotalTrades">0</strong></div><div class="trade-tallies"><b class="green" id="journalWinning">● Winning: 0</b><b class="red" id="journalLosing">● Losing: 0</b></div></article><div class="streaks-group"><h3 class="card-kicker">STREAKS</h3><div class="streaks"><div class="panel"><small>MAX WIN STREAK</small><strong class="green" id="journalMaxWin">0</strong></div><div class="panel"><small>MAX LOSE STREAK</small><strong class="red" id="journalMaxLoss">0</strong></div></div></div><article class="panel highlight-row"><div class="highlight-left"><span class="card-kicker">BEST TRADE</span><div class="highlight-meta" id="journalBestTradeMeta">—</div></div><strong class="green" id="journalBestTrade">—</strong></article><article class="panel highlight-row"><div class="highlight-left"><span class="card-kicker">BEST ASSET</span><div class="highlight-meta" id="journalBestAssetMeta">—</div></div><strong class="green" id="journalBestAsset">—</strong></article></div>
+<h3 class="section-title">Assets Summary</h3><div class="asset-summary" id="journalAssetSummary"></div>
+<div class="review-breakdown" id="journalMonthly"><div class="panel table-panel"><div class="panel-title"><h3>Monthly Review</h3><span>Результаты по месяцам</span></div><div class="table-scroll"><table><thead><tr><th>МЕСЯЦ</th><th>СДЕЛКИ</th><th>WIN RATE</th><th>NET GAIN</th><th>AVG WINNING TRADE</th></tr></thead><tbody id="monthlyRows"></tbody></table></div></div></div><div class="review-breakdown" id="journalQuarterly"><div class="panel table-panel"><div class="panel-title"><h3>Quarterly Review</h3><span>Результаты по кварталам</span></div><div class="table-scroll"><table><thead><tr><th>КВАРТАЛ</th><th>СДЕЛКИ</th><th>WIN RATE</th><th>NET GAIN</th><th>AVG WINNING TRADE</th></tr></thead><tbody id="quarterlyRows"></tbody></table></div></div></div></div>
+<div class="journal-view" id="journalCalendar"><div class="panel review-panel"><div class="review-head"><h3>Calendar</h3><div class="calendar-controls"><button class="secondary" id="calendarPrev">‹</button><strong id="calendarMonthLabel"></strong><button class="secondary" id="calendarNext">›</button></div></div><div class="calendar-grid" id="calendarGrid"></div></div></div>
+
+
+<div class="panel table-panel journal-trades-panel"><div class="panel-title"><h3 id="journal-trades-title">Сделки за период</h3><div class="table-tools"><span id="showing">Showing 0 trades</span><label>Rows <select id="rowLimit"><option>20</option><option>50</option><option>100</option><option>200</option></select></label></div></div><div class="table-scroll"><table><thead><tr><th>#</th><th>Открытие</th><th>Закрытие</th><th>HOLDING TIME</th><th>АКТИВ</th><th>DIRECTION</th><th>МОДЕЛЬ</th><th>RESULT</th><th>GAIN</th><th></th></tr></thead><tbody id="tradeRows"></tbody></table></div></div>
+</section>
+<section class="page" id="analytics">
+  <div class="page-heading"><div><h1>Advanced Analytics</h1><p>Результаты счёта, направления и торговые модели</p></div>
+    <label class="analytics-period-label">Период <select id="analyticsRange"><option value="0">Вся история</option><option value="30">30 дней</option><option value="90">90 дней</option><option value="365">365 дней</option></select></label>
+  </div>
+  <div class="analysis-note" id="analyticsNotice">Метрики по закрытым сделкам</div>
+  <div class="analysis-stats" id="analyticsMetrics"></div>
+  <div class="analysis-v2-duo">
+    <section class="panel analysis-v2-panel"><div class="analysis-v2-head"><div><span class="eyebrow">DIRECTION</span><h3>Long против Short</h3><p>Количество сделок, прибыль, Win Rate и средний R по направлениям.</p></div></div><div id="analyticsDirectionCompare" class="analysis-v2-directions"></div></section>
+    <section class="panel analysis-v2-panel"><div class="analysis-v2-head"><div><span class="eyebrow">DRAWDOWN</span><h3>Серии просадок</h3><p>Падение суммарного результата от предыдущего пика, без сложных процентов.</p></div></div><div id="analyticsDrawdowns"></div></section>
+  </div>
+<div id="analyticsDetail" class="analysis-detail panel hidden" aria-live="polite"></div><div class="analysis-panels">
+    <section class="panel analysis-panel"><h3>По моделям</h3><p>Что приносит прибыль: FVG, OB и другие стратегии</p><div id="analyticsModels"></div></section>
+    <section class="panel analysis-panel"><h3>По активам</h3><p>Результат и Win Rate по каждому инструменту</p><div id="analyticsAssets"></div></section>
+    <section class="panel analysis-panel"><h3>По месяцам</h3><p>Накопленная прибыль за каждый календарный месяц</p><div id="analyticsMonths"></div></section>
+    <section class="panel analysis-panel"><h3>По дням недели</h3><p>В какие дни лучше выполняются сделки</p><div id="analyticsWeekdays"></div></section>
+  </div>
+</section>
+<section class="page" id="plans">
+<div class="page-heading"><div><h1>Trading Plans</h1><p>Недельные планы, заметки по активам, экспорт в картинку и связь со сделками</p></div><button class="primary" id="addWeeklyPlanBtn">＋ New Weekly Plan</button></div>
+<div id="weeklyPlanOverview"><div class="plan-grid weekly-plan-grid" id="weeklyPlanGrid"></div>
+</div>
+<div class="workspace hidden" id="weeklyPlanWorkspace">
+<div class="workspace-bar"><button class="secondary" id="backToWeeklyPlans" type="button">← Ко всем неделям</button><div class="workspace-actions"><button class="danger-outline" id="deleteWeeklyPlanBtn" type="button">Удалить неделю</button></div></div>
+<div class="panel workspace-panel weekly-main-panel"><div class="workspace-title"><div><span class="eyebrow" id="weeklyPlanDate">WEEK</span><h2 id="weeklyPlanTitle">План на неделю</h2><p class="subtle" id="weeklyPlanSummary">Общий обзор недели и активы</p></div><span class="subtle">Локально · SQLite</span></div>
+<div class="workspace-form compact-weekly"><label id="weeklyEditorLabel" for="weeklyEditor">Общий план на неделю</label><textarea id="weeklyEditor" rows="7" placeholder="Контекст недели, риск, ключевые уровни, сценарии, правила…"></textarea>
+<div class="workspace-form-actions"><button class="primary" id="saveWeeklyNotesBtn" type="button">Сохранить недельный план</button></div></div>
+<div class="section-head"><h3>Активы недели</h3><span class="subtle" id="weeklyAssetCounter">0 активов</span></div>
+<div class="weekly-asset-list" id="weeklyAssetTabs"></div>
+<div class="workspace-form-actions"><button class="secondary" id="addWeeklyAssetBtn" type="button">＋ Добавить актив</button></div>
+</div></div>
+</section>
+<section class="page" id="backtest">
+<div class="page-heading"><div><h1>Backtest</h1><p>Отдельные тесты с таблицами, метриками, моделями и скриншотами</p></div><button class="primary" id="addBacktestBtn">＋ New Backtest</button></div>
+<div id="backtestOverview"><div class="backtest-grid" id="backtestGrid"></div></div>
+<div class="workspace hidden" id="backtestWorkspace">
+<div class="workspace-bar"><button class="secondary" id="backToBacktests" type="button">← Все бектесты</button><button class="danger-outline" id="deleteBacktestBtn" type="button">Удалить бектест</button></div>
+<div class="panel workspace-panel"><div class="workspace-title"><div class="bt-heading-stack"><div id="backtestWorkspacePills" class="plan-meta"></div><div class="bt-title-editor"><h2 id="backtestWorkspaceTitle">Backtest</h2><button class="bt-rename-button" id="editBacktestTitleBtn" type="button" title="Переименовать бектест" aria-label="Редактировать название бектеста">✎</button><div id="backtestInlineRename" class="bt-inline-title-edit hidden"><input id="backtestInlineTitleInput" type="text" maxlength="150" minlength="2" aria-label="Новое название бектеста" autocomplete="off" spellcheck="false" placeholder="Название проекта"><button type="button" class="bt-inline-title-save" id="saveBacktestInlineName" aria-label="Сохранить название" title="Сохранить">✓</button><button type="button" class="bt-inline-title-cancel" id="cancelBacktestInlineName" aria-label="Отменить редактирование" title="Отмена">×</button></div></div></div><button class="primary" id="addBacktestRowBtn" type="button">＋ Add Trade</button></div>
+<div class="panel chart-card bt-curve-card">
+  <div class="panel-title bt-curve-heading"><div><h3>Equity Curve</h3></div><span class="bt-curve-legend"></span></div>
+  <div class="chart-wrap interactive-chart bt-curve-wrap"><svg id="backtestEquityChart" role="img" aria-label="Backtest cumulative profit line chart" viewBox="0 0 1000 370" preserveAspectRatio="none"></svg><button class="equity-tooltip" id="backtestEquityChartTooltip" hidden type="button" title="Просмотреть сделку"></button></div>
+  <div class="bt-curve-footer"><strong id="backtestCurveTotal">+0.0%</strong></div>
+</div>
+<div class="backtest-statbar" id="backtestMetrics"></div>
+<div class="section-head"><h3>Сделки — редактируй прямо в таблице</h3><span class="subtle">Изменения сохраняются автоматически</span></div>
+<div class="table-scroll backtest-table-scroll"><table class="backtest-table"><thead><tr><th>#</th><th>Открытие</th><th>Закрытие</th><th>Длительность</th><th>Direction</th><th>Модель</th><th>Result</th><th>RR</th><th>RISK (%)</th><th>Gain (%)</th><th>Теги</th><th>Фото / детали</th><th></th></tr></thead><tbody id="backtestRows"></tbody></table></div>
+</div></div>
+</section>
+
+<section class="page" id="studio" aria-label="Export Studio">
+  <div class="page-heading studio-heading"><div><span class="studio-eyebrow">CONTENT CREATOR TOOLS · ОФЛАЙН</span><h1>Export Studio</h1><p>Минималистичные результаты торговли для Telegram — без данных торгового счёта</p></div><span class="studio-local"><span aria-hidden="true">●</span> Только локальный PNG</span></div>
+  <div class="studio-shell">
+    <aside class="studio-controls" aria-label="Настройки публикации">
+      <section class="studio-section"><div class="studio-section-head"><strong><span class="studio-count">01</span> Содержание</strong><small>Что показывать</small></div>
+        <div class="studio-segment" role="group" aria-label="Тип карточки"><button type="button" data-studio-mode="summary" class="selected">Итоги периода</button><button type="button" data-studio-mode="trade">Одна сделка</button></div>
+        <label class="studio-field" id="studioPeriodRow"><span>Период</span><select id="studioPeriod"><option value="all">Вся история</option><option value="7">Последние 7 дней</option><option value="30" selected>Последние 30 дней</option><option value="90">Последние 90 дней</option><option value="month">Текущий месяц</option><option value="previous_month">Прошлый месяц</option><option value="quarter">Текущий квартал</option></select></label>
+        <label class="studio-field" id="studioAssetRow"><span>Актив для отчёта</span><select id="studioAsset"><option value="all">Все активы</option></select></label>
+        <label class="studio-field hidden" id="studioTradeRow"><span>Закрытая сделка</span><select id="studioTradeSelect"></select></label>
+        <label class="studio-field"><span>Стиль торговли на карточке</span><select id="studioStyle"><option value="Swing">Swing</option><option value="Intraday">Intraday</option><option value="Scalping">Scalping</option></select></label>
+        <label class="studio-field"><span>Заголовок</span><input id="studioTitle" type="text" maxlength="64" value="Мои результаты торговли" placeholder="Например: Итоги торговой недели" autocomplete="off"/></label>
+        <label class="studio-field"><span>Подпись / канал</span><input id="studioHandle" type="text" maxlength="44" placeholder="@мой_канал (необязательно)" autocomplete="off"/></label>
+      </section>
+      <section class="studio-section"><div class="studio-section-head"><strong><span class="studio-count">02</span> Площадка и размер</strong><small>Экспорт без потери качества</small></div>
+        <div class="studio-format-grid" role="group" aria-label="Формат изображения">
+          <button type="button" data-studio-format="telegram" class="selected"><span class="studio-format-shape portrait" aria-hidden="true"></span><strong>Telegram Post</strong><small>1080 × 1350</small></button>
+          <button type="button" data-studio-format="square"><span class="studio-format-shape square" aria-hidden="true"></span><strong>Square</strong><small>1080 × 1080</small></button>
+        </div>
+      </section>
+      <section class="studio-section"><div class="studio-section-head"><strong><span class="studio-count">03</span> Шаблон</strong><small>Цвета Shelld Statistics</small></div>
+        <div class="studio-template-grid" role="group" aria-label="Визуальный шаблон">
+          <button type="button" data-studio-template="ember" class="selected"><span class="studio-template-preview ember"><i></i></span><strong>Torii</strong><small>Красный акцент</small></button>
+          <button type="button" data-studio-template="graphite"><span class="studio-template-preview graphite"><i></i></span><strong>Graphite</strong><small>Холодный серый</small></button>
+          <button type="button" data-studio-template="paper"><span class="studio-template-preview paper"><i></i></span><strong>Soft Paper</strong><small>Тёплая светлая</small></button>
+        </div>
+      </section>
+      <section class="studio-section studio-privacy"><div class="studio-section-head"><strong><span class="studio-count">04</span> Приватность</strong><small>Без данных счёта</small></div>
+        <label class="studio-toggle"><span><strong>Прозрачный фон</strong><small>Прозрачные поля вокруг карточки</small></span><input id="studioTransparent" type="checkbox"/></label>
+        <div class="studio-privacy-note"><span aria-hidden="true">✧</span><p>Данные подключения MT5, логин, сервер, баланс и название счёта <strong>не попадают</strong> в PNG. В карточке одной сделки актив показывается для контекста.</p></div>
+      </section>
+
+    </aside>
+    <section class="studio-preview-area" aria-label="Предпросмотр экспорта">
+      <div class="studio-preview-top"><div><span class="studio-eyebrow">LIVE PREVIEW</span><h2>Предпросмотр карточки</h2></div><span class="studio-resolution" id="studioResolution">1080 × 1350 PNG</span></div>
+      <div class="studio-preview-frame"><canvas id="studioCanvas" width="1080" height="1350" aria-label="Предпросмотр публикации"></canvas></div>
+      <div class="studio-preview-footer"><span id="studioPreviewInfo" aria-live="polite">Расчёт только по закрытым сделкам</span><span class="studio-privacy-status">◇ Нет внешней загрузки</span></div>
+      <div class="studio-export-actions"><button id="studioExportBtn" class="primary studio-export-btn" type="button">↓ Сохранить PNG</button><button id="studioCopyCaptionBtn" class="secondary" type="button">⧉ Скопировать подпись</button><button id="studioResetBtn" class="secondary" type="button">Сбросить оформление</button></div>
+      <p class="studio-hint">Экспорт соответствует предпросмотру. Числа берутся из сохранённого Trading Journal выбранного счёта. Открытые позиции не включаются в итоговую прибыль.</p>
+    </section>
+  </div>
+</section>
+</main>
+<div class="modal-backdrop" id="tradeModal"><form class="modal" id="tradeForm"><div class="modal-head"><div><h2>Добавить сделку</h2><p>Заполни данные для торгового журнала</p></div><button class="close" data-close="" type="button">×</button></div><div class="form-grid">
+<label>Дата открытия<input name="opened_at" type="hidden"/><button type="button" class="trade-date-btn" data-trade-date-field="opened_at"><span data-trade-date-display="opened_at">Выбрать дату и время</span><span class="bt-date-icon">▦</span></button></label><label>Дата закрытия<input name="closed_at" type="hidden"/><button type="button" class="trade-date-btn" data-trade-date-field="closed_at"><span data-trade-date-display="closed_at">Выбрать дату и время</span><span class="bt-date-icon">▦</span></button></label>
+<label>Актив<select name="asset"><option>EURUSD</option><option>GBPUSD</option><option>GER40</option><option>USDJPY</option><option>XAUUSD</option><option>US100</option><option>Другой</option></select></label><label>Направление<select name="direction"><option>LONG</option><option>SHORT</option></select></label>
+<label>Тип торговли<select name="trade_type"><option>Swing</option><option>Intraday</option></select></label><label>Модель<input name="model" placeholder="Например, H4 FVG"/></label><label>Результат<select name="result"><option>WIN</option><option>LOSS</option><option>BE</option><option>OPEN</option></select></label>
+<label>Результат (%)<input name="gain_pct" required="" inputmode="decimal" type="text" value="1" placeholder="Например, -1 или +2.5" autocomplete="off"/></label><label>Результат (R)<input name="r_multiple" required="" inputmode="decimal" type="text" value="1" placeholder="Например, -1 или 3" autocomplete="off"/></label>
+<label>План на неделю<select name="plan_id" id="tradePlanSelect"><option value="">Без плана</option></select></label><label>План по активу<select name="plan_asset_id" id="tradePlanAssetSelect"><option value="">Общий план</option></select></label><label class="full trade-notes-label">Заметки / ошибки<textarea name="notes" placeholder="Запиши идею входа, условия, психологию и разбор сделки…" rows="6" spellcheck="true"></textarea></label>
+</div>
+<section class="result-gallery-section" aria-label="Результат сделки">
+  <div class="result-gallery-heading"><div><h3>Результат:</h3><p>Скриншоты после закрытия сделки. Вставляй через Ctrl+V или добавляй файлы — без ограничения количества.</p></div><span class="result-gallery-count" id="tradeResultCount">0 изображений</span></div>
+  <div class="result-gallery-grid" id="tradeResultGrid"></div>
+  <p class="result-gallery-hint" id="tradeResultHint">Снимки сохраняются в SQLite вместе со сделкой.</p>
+</section>
+<div class="modal-actions"><button class="secondary" data-close="" type="button">Отмена</button><button class="primary" type="submit">Сохранить сделку</button></div></form></div>
+<div class="modal-backdrop" id="detailsModal">
+<div aria-labelledby="detailsTitle" aria-modal="true" class="modal detail-modal" role="dialog">
+<div class="modal-head">
+<div><p class="eyebrow">TRADE DETAILS</p><h2 id="detailsTitle">Сделка #</h2><p id="detailsSubtitle"></p></div>
+<button aria-label="Закрыть" class="close" data-close="" type="button">×</button>
+</div>
+<div class="details-stats" id="detailsStats"></div><div class="linked-plan" id="detailLinkedPlan"></div>
+<div class="detail-notes"><span class="eyebrow">ЗАМЕТКИ / АНАЛИЗ</span><p id="detailNotes"></p></div>
+<div class="screenshots-head"><h3>Скриншоты сделки</h3><p>Сохраняй оригиналы. Для быстрого добавления скопируй скриншот и нажми Ctrl+V.</p></div>
+<div class="screenshot-grid flexible-gallery" id="screenshotGrid"></div><div class="hidden" id="tradeExtraScreenshotGrid"></div><button type="button" class="hidden" id="addTradeExtraScreenshot">＋ Добавить ещё скриншот</button>
+<section class="result-gallery-section" aria-label="Результат сделки">
+  <div class="result-gallery-heading"><div><h3>Результат:</h3><p>Изображения результата без таймфрейма. Ctrl+V — вставить новый скриншот.</p></div><span class="result-gallery-count" id="detailResultCount">0 изображений</span></div>
+  <div class="result-gallery-grid" id="detailResultGrid"></div>
+</section>
+<div class="modal-actions"><button class="secondary" id="detailEditBtn" type="button">✎ Редактировать</button><button class="primary" id="detailCloseBtn" type="button">Готово</button></div>
+</div>
+</div>
+<div class="modal-backdrop" id="newWeeklyPlanModal"><form class="modal" id="newWeeklyPlanForm"><div class="modal-head"><div><h2>План на неделю</h2><p>Создай отдельный блок, внутри которого будет общий план и активы</p></div><button class="close" data-close type="button">×</button></div><div class="form-grid"><label>Начало недели<input type="date" name="week_start" id="weeklyStartInput" required></label><label>Название недели<input name="title" required placeholder="Неделя 12–18 октября"></label><label class="full">Общий план<textarea name="notes" rows="5" placeholder="HTF bias, задачи, ограничения по риску…"></textarea></label></div><div class="modal-actions"><button type="button" class="secondary" data-close>Отмена</button><button type="submit" class="primary">Создать неделю</button></div></form></div>
+<div class="modal-backdrop" id="newBacktestModal"><form class="modal" id="newBacktestForm"><div class="modal-head"><div><h2>Новый бектест</h2><p>Создай отдельный проект со статистикой и таблицей</p></div><button class="close" data-close type="button">×</button></div><div class="form-grid"><label for="newBacktestTitle">Название бектеста<input id="newBacktestTitle" name="title" type="text" autocomplete="off" minlength="2" maxlength="150" required placeholder="Например, HTF Swing EURUSD 2026"></label><label>Актив<select name="asset" id="btNewAssetSelect" required><option>EURUSD</option><option>GBPUSD</option><option>GER40</option><option>USDJPY</option><option>XAUUSD</option><option>US100</option><option value="CUSTOM">＋ Свой актив...</option></select><input class="hidden bt-custom-asset" type="text" id="btNewAssetCustom" maxlength="48" placeholder="Например, AUDCAD или BTCUSD"></label><label>Стиль<select name="style"><option>Swing</option><option>Intraday</option><option>Scalping</option></select></label><label>Год<input type="number" name="year" id="newBacktestYear" min="2000" max="2100" required></label><label class="full">Заметки<textarea name="notes" rows="3" placeholder="Описание стратегии и выборки"></textarea></label></div><div class="modal-actions"><button type="button" class="secondary" data-close>Отмена</button><button type="submit" class="primary">Создать бектест</button></div></form></div>
+<div class="modal-backdrop" id="backtestRowModal"><div class="modal detail-modal" role="dialog"><div class="modal-head"><div><p class="eyebrow">BACKTEST TRADE</p><h2 id="btRowTitle">Сделка</h2><p>Заметки, теги и скриншоты этого входа</p></div><button class="close" data-close type="button">×</button></div><div class="workspace-form"><label for="btRowNotes">Разбор сделки</label><textarea id="btRowNotes" rows="5" placeholder="Условия входа, ошибки, причины результата…"></textarea><div class="section-head mini"><h3>Теги</h3><button type="button" class="secondary" id="btAddTagBtn">＋ Тег</button></div><div id="btTagEditor" class="tag-editor"></div><div class="workspace-form-actions"><button type="button" class="primary" id="saveBtNotesBtn">Сохранить заметки</button></div></div><div class="screenshots-head"><h3>Скриншоты бектеста</h3><p>Любые таймфреймы и сколько угодно скриншотов. Копируй изображение и нажми Ctrl+V.</p></div><div class="screenshot-grid" id="btRowImageGrid"></div>
+<section class="result-gallery-section" aria-label="Результат сделки бектеста">
+  <div class="result-gallery-heading"><div><h3>Результат:</h3><p>Добавляй скриншоты результата через Ctrl+V или загрузи несколько файлов. Без таймфрейма.</p></div><span class="result-gallery-count" id="btResultCount">0 изображений</span></div>
+  <div class="result-gallery-grid" id="btResultGrid"></div>
+</section>
+<div class="modal-actions"><button class="primary" type="button" data-close>Готово</button></div></div></div>
+<div class="modal-backdrop" id="weeklyAssetModal"><div class="modal detail-modal weekly-asset-modal" role="dialog"><div class="modal-head"><div><p class="eyebrow">WEEKLY ASSET PLAN</p><h2 id="weeklyAssetModalTitle">EURUSD</h2><p id="weeklyAssetModalSubtitle">Скриншоты и разбор актива · Ctrl+V для вставки</p></div><button class="close" data-close type="button">×</button></div><div class="asset-modal-scroll"><div class="screenshot-grid weekly-modal-grid" id="weeklyAssetModalImages"></div><div class="workspace-form"><label for="weeklyAssetModalNotes">Разбор актива</label><textarea id="weeklyAssetModalNotes" rows="10" placeholder="1W
+...
+
+1D
+...
+
+4H
+..."></textarea><div class="workspace-form-actions"><button type="button" class="danger-outline" id="deleteWeeklyAssetBtn">Удалить актив</button><button type="button" class="secondary" id="exportWeeklyAssetBtn" title="Сохранить PNG для публикации в Telegram">↓ Экспорт для Telegram</button><button type="button" class="primary" id="saveWeeklyAssetBtn">Сохранить актив</button></div></div></div></div></div><div class="modal-backdrop" id="assetPickerModal"><form class="modal small-picker-modal" id="assetPickerForm" role="dialog" aria-modal="true" aria-label="Добавить актив"><div class="modal-head"><div><h2>Добавить актив</h2><p>Выбери торговую пару или индекс для недельного плана</p></div><button class="close" type="button" data-close>×</button></div><label class="picker-label">Актив<select id="assetPickerSelect" required><option value="EURUSD">EURUSD</option><option value="GBPUSD">GBPUSD</option><option value="GER40">GER40</option><option value="USDJPY">USDJPY</option><option value="XAUUSD">XAUUSD</option><option value="US100">US100</option><option value="OTHER">Другой актив…</option></select></label><input class="picker-custom hidden" id="assetPickerOther" maxlength="32" placeholder="Например, AUDUSD" pattern="[a-zA-Z0-9._-]{2,32}"><div class="modal-actions"><button type="button" class="secondary" data-close>Отмена</button><button class="primary" type="submit">Добавить актив</button></div></form></div>
+<div class="modal-backdrop" id="tagPickerModal"><form class="modal small-picker-modal" id="tagPickerForm" role="dialog" aria-modal="true" aria-label="Добавить тег"><div class="modal-head"><div><h2>Добавить тег</h2><p>Новый тег или один из уже используемых</p></div><button class="close" type="button" data-close>×</button></div><label class="picker-label">Название тега<input id="tagPickerInput" maxlength="60" required placeholder="FVG / Sweep / HTF Bias"></label><div class="tag-picker-suggestions" id="tagSuggestions"></div><div class="modal-actions"><button type="button" class="secondary" data-close>Отмена</button><button class="primary" type="submit">Добавить тег</button></div></form></div>
+<div class="modal-backdrop" id="backtestRenameModal"><form class="modal bt-rename-modal" id="backtestRenameForm"><div class="modal-head"><div><h2>Название бектеста</h2><p>Можно изменить в любое время, история сделок сохранится</p></div><button class="close" type="button" data-close>×</button></div><label class="picker-label" for="backtestRenameInput">Название проекта<input id="backtestRenameInput" type="text" required minlength="2" maxlength="150" autocomplete="off" placeholder="Мой Backtest"/></label><div class="modal-actions"><button class="secondary" type="button" data-close>Отмена</button><button class="primary" type="submit">Сохранить</button></div></form></div>
+<div class="modal-backdrop" id="btDateModal"><form class="modal bt-date-modal" id="btDateForm"><div class="modal-head"><div><span class="eyebrow" id="btDateCaption">BACKTEST · OPENED</span><h2>Дата и время</h2><p>Выбери число и введи время без системного календаря</p></div><button class="close" type="button" data-close>×</button></div>
+<div class="bt-date-main"><section class="bt-date-calendar"><div class="bt-date-head"><button class="bt-date-nav" id="btMonthPrev" type="button" aria-label="Предыдущий месяц">‹</button><strong id="btMonthName">Октябрь 2026</strong><button class="bt-date-nav" id="btMonthNext" type="button" aria-label="Следующий месяц">›</button></div><div class="bt-date-weekdays"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span></div><div id="btDateCalendar" class="bt-date-days"></div></section>
+<section class="bt-time-section"><label for="btDayInput">Дата</label><input id="btDayInput" type="text" inputmode="numeric" placeholder="ДД.ММ.ГГГГ" autocomplete="off" spellcheck="false" maxlength="10" required/><label>Время</label><div class="bt-time-inputs"><input id="btHourInput" type="text" maxlength="2" inputmode="numeric" aria-label="Часы" placeholder="14" required/><b>:</b><input id="btMinuteInput" type="text" maxlength="2" inputmode="numeric" aria-label="Минуты" placeholder="30" required/></div><div class="bt-quick-time"><button type="button" data-bt-quick="00:00">00:00</button><button type="button" data-bt-quick="08:00">08:00</button><button type="button" data-bt-quick="12:00">12:00</button><button type="button" data-bt-quick="16:00">16:00</button><button type="button" data-bt-quick="20:00">20:00</button></div><div class="bt-date-tip">Формат 24 часа · Можно ввести дату и время вручную</div></section></div>
+<div class="modal-actions"><button class="secondary" id="btDateClear" type="button">Очистить</button><button class="secondary" type="button" data-close>Отмена</button><button class="primary" type="submit">Применить</button></div></form></div>
+<div class="modal-backdrop image-backdrop" id="imageLightbox"><div class="image-viewer" role="dialog" aria-modal="true" aria-label="Просмотр скриншота"><div class="image-viewer-toolbar"><span id="imageCaption">Скриншот</span><div><button type="button" class="secondary" id="imageToggleScale">100%</button><button class="secondary" type="button" id="imageClose">✕ Закрыть</button></div></div><div class="image-viewer-stage" id="imageViewerStage"><img id="imageFull" alt="Скриншот в исходном разрешении"></div></div></div>
+<div class="modal-backdrop" id="accountModal">
+  <div class="modal account-modal" role="dialog" aria-modal="true" aria-label="Счета Shelld Statistics">
+    <div class="modal-head"><div><span class="eyebrow">MULTI-ACCOUNT</span><h2>Торговые счета</h2><p>Каждый счёт имеет отдельный журнал и статистику</p></div><button class="close" type="button" data-close>×</button></div>
+    <div class="account-modal-list" id="accountModalList"></div>
+    <form id="accountEditForm" class="account-edit-form">
+      <h3 id="accountFormTitle">Редактировать счёт</h3>
+      <div class="form-grid">
+        <label>Название<input id="accountLabel" type="text" required maxlength="150" placeholder="Мой счёт"/></label>
+        <label>Брокер<input id="accountBroker" type="text" maxlength="70" placeholder="FTMO"/></label>
+        <label>Логин MT5<input id="accountLogin" type="text" autocomplete="off" inputmode="numeric" placeholder="необязательно"/></label>
+        <label>Сервер MT5<input id="accountServer" type="text" autocomplete="off" placeholder="Broker-Server"/></label>
+        <label>Валюта счёта<input id="accountCurrency" type="text" maxlength="8" placeholder="EUR"/></label>
+        <label>База капитала<input id="accountBasis" type="number" min="0" step="any" placeholder="10000"/></label>
+        <details class="full mt5-advanced"><summary>Настройки Python (только для опытных пользователей)</summary><label>Внешний Python (необязательно)<input id="accountPython" type="text" autocomplete="off" placeholder="По умолчанию встроенный компонент"/></label></details>
+        <label class="full">MT5 terminal64.exe (путь)<input id="accountTerminal" type="text" autocomplete="off"/></label>
+      </div>
+      <div class="modal-actions account-edit-actions"><button type="button" id="deleteSelectedAccountBtn" class="danger-outline"> <span aria-hidden="true">🗑</span> Удалить выбранный счёт</button><span class="account-actions-spacer"></span><button type="button" id="newAccountBtn" class="secondary">＋ Новый счёт</button><button type="submit" class="primary" id="saveAccountBtn">Сохранить профиль</button></div>
+    </form>
+    <div class="account-secret-notice">Пароль MT5 в этот профиль не входит. Его можно отдельно сохранить шифрованным средствами Windows в окне MT5 Connect.</div>
+    <div id="accountDeleteBackup" class="account-delete-backup hidden" role="status"><strong>Резервная копия удалённого счёта</strong><code id="accountDeleteBackupPath"></code><button type="button" class="secondary" id="copyAccountBackupPath">Копировать путь</button></div>
+  </div>
+</div>
+<div class="modal-backdrop" id="accountDeleteModal">
+  <form id="accountDeleteForm" class="modal account-delete-modal" role="dialog" aria-modal="true" aria-labelledby="accountDeleteTitle">
+    <div class="modal-head"><div><span class="eyebrow">УДАЛЕНИЕ СЧЁТА</span><h2 id="accountDeleteTitle">Удалить торговый счёт?</h2><p>Это действие нельзя отменить в приложении без восстановления резервной копии.</p></div><button type="button" class="close" data-close aria-label="Закрыть">×</button></div>
+    <div class="account-delete-warning"><strong id="accountDeleteName"></strong><p id="accountDeleteSummary"></p><p>Будут удалены сделки, их скриншоты, бектесты, планы и сохранённый пароль MT5 <b>только этого профиля</b>. Другие счета не изменятся. Перед удалением программа автоматически создаст SQLite-копию.</p></div>
+    <label class="account-delete-confirm-label" for="accountDeleteNameInput">Для подтверждения введи точное название счёта</label>
+    <input id="accountDeleteNameInput" type="text" autocomplete="off" spellcheck="false" required placeholder="Название счёта"/>
+    <div class="modal-actions"><button type="button" class="secondary" data-close>Отмена</button><button id="confirmDeleteAccountBtn" type="submit" class="account-delete-confirm" disabled>Удалить счёт и его данные</button></div>
+  </form>
+</div>
+<div class="modal-backdrop" id="mt5Modal">
+  <div class="modal mt5-modal" role="dialog" aria-modal="true" aria-labelledby="mt5ModalTitle">
+    <div class="modal-head"><div><div class="eyebrow">READ-ONLY · LOCAL SYNC</div><h2 id="mt5ModalTitle">MetaTrader 5</h2><p>Получение закрытых позиций из установленного на ПК терминала</p></div><button class="close" type="button" data-close>×</button></div>
+    <div class="mt5-connection-status" id="mt5ConnectionStatus"><span class="mt5-status-dot"></span><div><strong>Не подключено</strong><small>Введи логин, торговый пароль и точное имя сервера брокера</small></div></div>
+    <form id="mt5Form">
+      <div class="form-grid mt5-grid">
+        <label>Логин MT5<input id="mt5Login" type="text" inputmode="numeric" autocomplete="off" value="" placeholder="12345678" required/></label>
+        <label>Сервер брокера<input id="mt5Server" type="text" autocomplete="off" value="" placeholder="Broker-Server" required/></label>
+        <label class="full">Пароль от торгового счёта<input id="mt5Password" type="password" autocomplete="off" placeholder="Введите пароль или используйте сохранённый"/></label>
+        <details class="full mt5-advanced"><summary>Дополнительно: собственный Python (не нужен обычному пользователю)</summary><label>Путь к Python (необязательно)<input id="mt5Python" type="text" value="" autocomplete="off" placeholder="Оставь пустым — используется встроенный модуль"/></label></details>
+        <label>Период истории<select id="mt5Days"><option value="90">90 дней</option><option value="365" selected>1 год</option><option value="730">2 года</option><option value="1825">5 лет</option></select></label>
+        <label class="full">Путь к terminal64.exe (необязательно)<input id="mt5Terminal" type="text" value="" autocomplete="off" placeholder="C:\Program Files\MetaTrader 5\terminal64.exe"/></label>
+        <label class="full">База капитала для расчёта % (необязательно)<input id="mt5Basis" type="text" inputmode="decimal" autocomplete="off" value="" placeholder="Например, 10000 — оставь пустым, если не знаешь"/></label>
+      </div>
+      <label class="mt5-checkbox"><input id="mt5Auto" type="checkbox" checked/><span>Автосинхронизация каждые 60 секунд, пока программа открыта</span></label>
+      <label class="mt5-checkbox"><input id="mt5Remember" type="checkbox"/><span>Запомнить пароль на этом компьютере (шифрование Windows; необязательно)</span></label>
+      <small id="mt5RememberInfo" class="mt5-secure-hint">Без этой настройки пароль хранится только до отключения MT5.</small>
+      <p class="mt5-caution">Пароль не сохраняется в SQLite и не отправляется в облако. При установленном терминале MT5 приложение использует встроенный модуль, без установки Python. При отсутствии базы капитала программа показывает денежный P&amp;L, а не выдуманный процент. RR нельзя точно восстановить без первоначального риска.</p>
+      <div class="mt5-actions"><button class="secondary" id="mt5DisconnectBtn" type="button">Отключить</button><button class="secondary" id="mt5SyncBtn" type="button">↻ Синхронизировать</button><button class="primary" id="mt5ConnectBtn" type="submit">Подключить MT5</button></div>
+    </form>
+    <p class="mt5-results" id="mt5Results">Достаточно установленного терминала MetaTrader 5. Встроенный модуль уже входит в установщик; данные считываются без торговых операций.</p>
+  </div>
+</div>
+<div class="modal-backdrop" id="beSettingsModal"><form class="modal settings-modal" id="beSettingsForm" role="dialog" aria-modal="true"><div class="modal-head"><div><span class="eyebrow">STATISTICS SETTINGS</span><h2>Диапазон Break Even</h2><p>Какие сделки считать нейтральными в статистике</p></div><button class="close" data-close type="button">×</button></div><label class="settings-checkbox"><input type="checkbox" id="beEnabled"><span>Автоматически учитывать небольшой результат как BE</span></label><div class="form-grid"><label>Единицы<select id="beUnit"><option value="percent">Проценты от капитала (%)</option><option value="money">Валюта счёта (EUR, USD и т. д.)</option></select></label><span></span><label>От<input id="beMin" type="text" inputmode="decimal" spellcheck="false" autocomplete="off" value="-0.2" placeholder="−0,40" required></label><label>До<input id="beMax" type="text" inputmode="decimal" spellcheck="false" autocomplete="off" value="0.2" placeholder="+0,40" required></label></div><p class="settings-hint">Можно вводить через точку или запятую: от −0,40% до +0,40%. При подсчёте BE не считается победой или поражением и не прерывает серию. Ручные изменения сделок не затираются MT5. Сумма прибыли при этом остаётся фактической.</p><div class="modal-actions"><button class="secondary" type="button" id="beResetBtn">Сбросить диапазон</button><button class="primary" type="submit">Сохранить настройки</button></div></form></div>
+<div class="modal-backdrop" id="screenshotTfModal"><form class="modal screenshot-tf-modal" id="screenshotTfForm"><div class="modal-head"><div><span class="eyebrow">IMAGE LIBRARY</span><h2>Добавить скриншот</h2><p>Выбери таймфрейм для вставленного или выбранного изображения</p></div><button type="button" class="close" data-close>×</button></div><label class="picker-label">Таймфрейм<select id="screenshotTfSelect"><option value="1MN">1M · Месячный</option><option value="1W">1W · Недельный</option><option value="1D">1D · Дневной</option><option value="12H">12H · Двенадцатичасовой</option><option value="8H">8H · Восьмичасовой</option><option value="6H">6H · Шестичасовой</option><option value="4H">4H · Четырёхчасовой</option><option value="2H">2H · Двухчасовой</option><option value="1H">1H · Часовой</option><option value="30M">30M · Тридцатиминутный</option><option value="15M">15M · Пятнадцатиминутный</option><option value="5M">5M · Пятиминутный</option><option value="1M">1m · Минутный</option><option value="CUSTOM">Свой таймфрейм…</option></select></label><input class="hidden" id="screenshotTfCustom" type="text" maxlength="16" placeholder="Например, 3H"><div class="modal-actions"><button type="button" class="secondary" data-close>Отмена</button><button type="submit" class="primary">Выбрать изображение</button></div></form></div>
+<div class="modal-backdrop" id="imageEditorModal"><div class="modal image-editor-modal" role="dialog" aria-modal="true" aria-label="Редактор скриншотов"><div class="modal-head"><div><p class="eyebrow">IMAGE MARKUP</p><h2>Редактор скриншота</h2><p>Линии, стрелки и подписи · оригинал сохраняется отдельно</p></div><button id="imageEditClose" class="close" type="button" aria-label="Закрыть">×</button></div><div class="image-editor-toolbar"><label>Инструмент<select id="imageEditTool"><option value="arrow">↗ Стрелка</option><option value="pen">✎ Карандаш</option><option value="line">─ Линия</option><option value="rect">▣ Прямоугольник</option><option value="text">T Текст</option></select></label><label>Цвет<input id="imageEditColor" type="color" value="#ff5265" aria-label="Цвет рисунка"></label><label>Толщина<input id="imageEditWidth" type="range" min="2" max="20" step="1" value="4"></label><label style="flex:1;min-width:170px">Подпись (инструмент «Текст»)<input id="imageEditText" type="text" maxlength="140" placeholder="Зона ликвидности / FVG"></label><button class="secondary" id="imageEditUndo" type="button">↶ Отменить</button><button class="secondary" id="imageEditClear" type="button">Очистить рисунок</button></div><div class="image-editor-stage"><canvas id="imageEditCanvas" aria-label="Рисование поверх скриншота"></canvas></div><div class="image-editor-message"><span id="imageEditSize">—</span> · <span id="imageEditCounter">0 элементов</span> · Изображение сохраняется в оригинальном разрешении как новая копия.</div><div class="modal-actions"><button class="secondary" type="button" id="imageEditDismiss">Отмена</button><button class="primary" type="button" id="imageEditSave">Сохранить копию</button></div></div></div>
+<div class="modal-backdrop" id="backupModal"><div class="modal backup-modal" role="dialog" aria-modal="true" aria-label="Резервные копии"><div class="modal-head"><div><p class="eyebrow">LOCAL SQLITE</p><h2>Резервные копии</h2><p>Ежедневный локальный Backup всех аккаунтов, сделок и изображений</p></div><button class="close" type="button" data-close>×</button></div><div class="backup-preferences"><label class="backup-toggle"><input id="autoBackupEnabled" type="checkbox" checked>Автоматический Backup каждый день</label><div class="backup-controls"><span>Количество копий:</span><select id="autoBackupKeep"><option value="7">7</option><option value="14" selected>14</option><option value="30">30</option></select><button type="button" class="secondary" id="saveBackupConfig">Сохранить настройки</button></div><div class="backup-status-panel" id="autoBackupStatus" role="status">Проверяю резервные копии…</div></div><div class="modal-actions"><button type="button" class="secondary" id="autoBackupRun">Сделать копию</button><button type="button" class="secondary" id="autoBackupFolder">Открыть папку</button><button type="button" class="secondary" id="manualBackupExport">Экспорт SQLite…</button><button type="button" class="secondary" id="manualBackupRestore">Восстановить…</button><button type="button" class="primary" id="backupClose" data-close>Готово</button></div></div></div>
+<div class="modal-backdrop" id="publicWelcomeModal"><div class="modal welcome-modal" role="dialog" aria-modal="true" aria-labelledby="publicWelcomeTitle">
+  <div class="modal-head"><div><span class="eyebrow">SHELLD STATISTICS · PUBLIC BETA</span><h2 id="publicWelcomeTitle">Добро пожаловать</h2><p>Журнал работает локально, без регистрации и интернета. Выбери, с чего начать.</p></div><button class="close" type="button" data-close aria-label="Закрыть">×</button></div>
+  <div class="welcome-steps"><div><b>01</b><span><strong>Ручной журнал</strong><small>Добавляй сделки и бектесты без MT5, Python и аккаунта брокера.</small></span></div>
+  <div><b>02</b><span><strong>Подключение MT5 — по желанию</strong><small>Нужен установленный на этом ПК терминал MetaTrader 5. Python уже включён в установщик приложения.</small></span></div>
+  <div><b>03</b><span><strong>Backup</strong><small>Локальные ежедневные резервные копии защищают твои сделки и скриншоты.</small></span></div></div>
+  <div class="modal-actions welcome-buttons"><button type="button" class="secondary" id="publicWelcomeManual">Начать без MT5</button><button type="button" class="primary" id="publicWelcomeMt5">Настроить MT5 →</button></div>
+  <small class="welcome-foot">Никакие данные FTMO или другого пользователя не предустановлены. Данные этой Beta хранятся отдельно от личной версии Shelld Statistics.</small>
+</div></div>
+<input type="file" class="hidden" id="resultImageFileInput" accept="image/png,image/jpeg,image/webp" multiple aria-label="Выбор скриншотов результата"><div class="toast" id="toast"></div><script src="be-rules.js"></script><script src="stats.js"></script><script src="advanced-analytics.js"></script><script src="analytics-v2.js"></script><script src="notion-charts.js"></script><script src="duration.js"></script><script src="renderer.js"></script><script src="advanced-ui.js"></script><script src="analytics-v2-ui.js"></script><script src="account-ui.js"></script><script src="mt5-ui.js"></script><script src="export-studio-core.js"></script><script src="export-studio.js"></script><script src="image-workspace.js"></script><script src="backup-ui.js"></script><script src="public-onboarding.js"></script></body></html>

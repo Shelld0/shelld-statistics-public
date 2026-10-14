@@ -1,0 +1,206 @@
+/* Shelld v0.6.9 — one final, consistent layout system. */
+:root {--content-width:1040px;--panel-outline:#24272f;--soft:#a9b0bf}
+:root.light {--panel-outline:#d9dee5;--soft:#707a89}
+body {min-width:980px}
+.app-main,
+.app-main:has(#backtestWorkspace:not(.hidden)) {
+  width:calc(100% - 88px)!important;
+  max-width:1240px!important;
+  padding:0 16px!important;
+  margin:34px auto 100px!important;
+}
+.page-heading,
+#dashboard .chart-card,#journal .journal-chart,
+#dashboard .metrics,#journal .journal-metrics,
+#dashboard .stats-grid,#journal .journal-detail-grid,
+#dashboard .asset-summary,#journal .asset-summary,
+#dashboard .section-title,#journal .section-title,
+#dashboard .table-panel,#journal .journal-trades-panel,
+#journal .journal-subnav,#journal .journal-filters,
+#journal .period-nav,#journal .review-breakdown,
+#journal .review-panel,
+#backtestWorkspace .bt-curve-card,
+#backtestWorkspace .backtest-statbar {
+  width:100%!important;
+  max-width:var(--content-width)!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  box-sizing:border-box!important;
+}
+.page-heading {max-width:var(--content-width)!important;margin-bottom:22px!important}
+#backtestWorkspace .page-heading {max-width:100%!important}
+#dashboard .chart-card,#journal .journal-chart,#backtestWorkspace .bt-curve-card {
+  padding:22px 25px 14px!important;
+  margin-bottom:16px!important;
+  border:1px solid var(--panel-outline)!important;
+  border-radius:19px!important;
+  background:var(--panel)!important;
+  box-shadow:0 4px 24px rgba(0,0,0,.06)!important;
+}
+.chart-card .panel-title {display:flex!important;align-items:center!important;min-height:25px;margin-bottom:12px!important;gap:12px}
+.chart-card .panel-title h3,.bt-curve-heading h3 {font-size:14px!important;font-weight:700;letter-spacing:0}
+.chart-card .panel-title .chart-actions {margin-left:auto}
+.chart-card .chart-wrap,
+#dashboard .chart-card .chart-wrap,#journal .journal-chart .chart-wrap,
+#backtestWorkspace .bt-curve-card .chart-wrap {
+  position:relative!important;
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:960 / 425!important;
+  max-height:none!important;
+  padding:0!important;
+  margin:0 auto!important;
+  overflow:hidden!important;
+}
+.chart-wrap svg, .chart-card .chart-wrap svg,
+#backtestWorkspace .bt-curve-card .chart-wrap svg {
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  position:relative;
+  overflow:visible;
+  touch-action:none;
+  cursor:crosshair;
+}
+svg .chart-axis {font:500 13px 'JetBrains Mono',monospace;fill:var(--muted)}
+svg .chart-empty {font:600 16px 'Inter',sans-serif;fill:var(--muted)}
+.interactive-chart .equity-tooltip {font-family:'Inter',sans-serif!important;z-index:3!important;pointer-events:auto}
+#dashboard .metrics,#journal .journal-metrics {
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  column-gap:15px!important;
+  row-gap:15px!important;
+  margin-top:16px!important;
+  margin-bottom:22px!important;
+}
+.metric {min-width:0!important;min-height:124px!important;border-radius:16px!important;padding:20px 23px!important}
+.metric strong {font:700 clamp(23px,2vw,31px) 'JetBrains Mono',monospace!important;letter-spacing:-.04em;line-height:1.6!important}
+.metric small,.metric span {white-space:normal!important;overflow-wrap:anywhere}
+#dashboard .stats-grid,#journal .journal-detail-grid {display:grid!important;grid-template-columns:1.12fr 1fr!important;gap:15px!important;margin-bottom:18px!important}
+#dashboard .stat-box,#journal .stat-box {width:100%!important;min-width:0!important}
+#dashboard .highlight-row,#journal .highlight-row {width:100%!important;min-width:0!important}
+#dashboard .section-title,#journal .section-title {text-align:left!important;padding:0 2px!important;margin-top:24px!important;margin-bottom:13px!important}
+#dashboard .asset-summary,#journal .asset-summary {display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:15px!important;margin-bottom:24px!important}
+#dashboard .table-panel,#journal .journal-trades-panel {overflow:hidden!important;border-radius:16px!important}
+#journal .journal-subnav {display:flex!important;justify-content:flex-start!important;margin-bottom:16px!important}
+#journal .journal-filters {display:flex!important;align-items:center!important;gap:10px!important;flex-wrap:wrap!important;margin-bottom:16px!important}
+#journal .journal-filters input {min-width:140px;flex:1}
+#journal .period-nav {display:flex;justify-content:space-between;align-items:center;min-height:36px;margin-bottom:14px!important}
+#journal .period-nav.is-hidden {display:none!important}
+#backtestWorkspace {width:100%!important;min-width:0!important}
+#backtestWorkspace .workspace-panel {padding:24px 28px 32px!important}
+#backtestWorkspace .bt-curve-card {margin-top:20px!important;margin-bottom:18px!important}
+#backtestWorkspace .backtest-statbar {display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:15px!important;margin-bottom:25px!important}
+#backtestWorkspace .backtest-statbar .bt-summary-cell {min-width:0!important;padding:16px 18px!important;border-radius:14px!important}
+#backtestWorkspace .backtest-statbar .bt-summary-cell strong {font-size:23px!important}
+#backtestWorkspace .backtest-table-scroll {max-width:none!important;width:100%!important;overflow:auto!important;margin-left:auto!important;margin-right:auto!important}
+#backtestWorkspace .bt-curve-footer {padding:0!important;margin:0!important;min-height:0!important}
+#backtestCurveTotal{display:none!important}
+.bt-curve-heading p,.bt-curve-legend,.chart-meta,.chart-foot {display:none!important}
+.mt5-quick {display:inline-flex;align-items:center;gap:9px;font:700 11px 'Inter',sans-serif;letter-spacing:.1px;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;white-space:nowrap;cursor:pointer;transition:background .17s,border-color .17s}
+.mt5-quick:hover{border-color:#68748a;background:var(--hover)}
+.mt5-signal {width:8px;height:8px;border-radius:100%;background:var(--muted)}
+.mt5-signal.connected {background:var(--green);box-shadow:0 0 10px color-mix(in srgb,var(--green) 40%,transparent)}
+.mt5-modal {width:min(710px,100%)!important;max-height:90vh;overflow-y:auto!important;border-radius:20px!important;padding:27px!important}
+.mt5-modal .modal-head h2{font-size:24px}
+.mt5-connection-status {display:flex;align-items:center;gap:14px;background:var(--panel2);border:1px solid var(--border);padding:16px 18px;border-radius:14px;margin:0 0 22px}
+.mt5-connection-status .mt5-status-dot {height:12px;width:12px;border-radius:50%;background:var(--muted);flex:none}
+.mt5-connection-status.connected .mt5-status-dot {background:var(--green);box-shadow:0 0 12px #35d6a050}
+.mt5-connection-status strong {display:block;font-size:14px}
+.mt5-connection-status small {display:block;margin-top:4px;color:var(--muted);font-size:11px}
+.mt5-grid {grid-template-columns:1fr 1fr!important;gap:15px!important}
+.mt5-grid label {font:600 12px 'Inter',sans-serif;color:var(--soft)}
+.mt5-grid input,.mt5-grid select {width:100%;border-radius:11px!important;padding:12px 14px!important;background:var(--panel2);color:var(--text);font:500 12px 'JetBrains Mono',monospace;border:1px solid var(--border)}
+.mt5-grid input:focus {outline:2px solid color-mix(in srgb,var(--accent) 40%,transparent);outline-offset:1px}
+.mt5-checkbox{margin-top:20px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text);cursor:pointer}
+.mt5-checkbox input{width:16px;height:16px;accent-color:var(--accent)}
+.mt5-caution {font-size:11px;color:var(--muted);line-height:1.8;background:var(--panel2);border:1px solid var(--border);padding:14px 16px;border-radius:11px;margin:18px 0 0}
+.mt5-actions {margin-top:20px;display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap}
+.mt5-actions button:disabled {opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.mt5-results {font-size:11px;color:var(--muted);min-height:18px;margin:18px 0 0;line-height:1.6}
+.mt5-results.error {color:#f28188}
+@media(min-width:1900px){.app-main,.app-main:has(#backtestWorkspace:not(.hidden)) {width:calc(100% - 420px)!important;max-width:1370px!important}}
+@media(max-width:1100px){.app-main,.app-main:has(#backtestWorkspace:not(.hidden)) {width:calc(100% - 50px)!important;padding:0!important}#backtestWorkspace .backtest-statbar{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+
+/* Neutral-grey journal line; torii red is reserved for Backtest. */
+#dashboard .chart-card,#journal .journal-chart{--curve-line:#a5b3c9;--curve-zero:#42454e}
+:root.light #dashboard .chart-card,:root.light #journal .journal-chart{--curve-line:#697a95;--curve-zero:#c7cdd6}
+#backtestWorkspace .bt-curve-card{--curve-line:#e24b4a}
+
+
+/* v0.6.9.2: clean Backtest heading layout and readable holding-time values. */
+#backtestWorkspace .workspace-title {
+  display:flex!important; align-items:flex-start!important; justify-content:space-between!important;
+  gap:26px!important; margin-bottom:26px!important; min-height:84px;
+}
+#backtestWorkspace .bt-heading-stack {
+  flex:1 1 auto; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:12px;
+}
+#backtestWorkspace #backtestWorkspacePills {
+  display:flex!important; flex-wrap:wrap!important; align-items:center!important;
+  gap:9px!important; margin:0!important; min-height:26px; width:100%;
+}
+#backtestWorkspace .bt-title-editor {
+  display:flex!important; align-items:center!important; flex-wrap:wrap!important;
+  column-gap:12px!important; row-gap:8px!important; min-width:0; width:100%; margin:0!important;
+}
+#backtestWorkspace #backtestWorkspaceTitle {
+  flex:0 1 auto; max-width:calc(100% - 50px); min-width:0;
+  overflow-wrap:anywhere; word-break:normal; white-space:normal!important;
+  margin:0!important; padding:0!important; font-size:24px!important;
+  line-height:1.3!important; letter-spacing:-.025em;
+}
+#backtestWorkspace .bt-rename-button {
+  flex:0 0 36px!important; width:36px!important; height:36px!important;
+  margin:0!important; align-self:center;
+}
+#backtestWorkspace #addBacktestRowBtn {flex:0 0 auto;white-space:nowrap;margin-top:1px}
+#backtestWorkspace .bt-holding-time,
+#journal .journal-duration {white-space:nowrap; font-family:'JetBrains Mono',Consolas,monospace;font-variant-numeric:tabular-nums}
+@media(max-width:700px){
+ #backtestWorkspace .workspace-title{flex-wrap:wrap!important;gap:18px!important}
+ #backtestWorkspace #addBacktestRowBtn{margin-left:auto}
+}
+
+/* v0.6.11 — backtest cells, screenshots and custom asset input */
+#backtestWorkspace .backtest-table tbody td:nth-child(4),
+#backtestWorkspace .backtest-table .bt-holding-time,
+#backtestWorkspace .backtest-table tbody td:nth-child(4):hover {background:transparent!important}
+#backtestWorkspace .backtest-table tr:hover td:nth-child(4){background:transparent!important}
+#btNewAssetCustom:not(.hidden){display:block;margin-top:8px;width:100%;padding:10px 12px;border-radius:9px}
+.extra-screenshots{margin-top:25px;padding-top:17px;border-top:1px solid var(--border)}
+.extra-screenshots-head{display:flex;gap:15px;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:15px}
+.extra-screenshots-head h3{margin:0;font-size:14px}.extra-screenshots-head span{font-size:11px;color:var(--muted)}
+.extra-screenshot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:13px;margin:12px 0 16px}
+.trade-extra-card{position:relative;min-width:0;background:var(--panel2);border-radius:12px;padding:8px;border:1px solid var(--border)}
+.trade-extra-card img{display:block;width:100%;height:115px;object-fit:contain;background:#0b0d11;border-radius:8px;cursor:zoom-in}
+.trade-extra-card button{position:absolute;right:10px;top:10px;background:#151821db;color:#f4f4f6;z-index:1}
+.extra-screenshot-grid>.subtle{font-size:12px}
+#detailsModal .detail-modal{max-height:94vh;overflow-y:auto}
+
+/* 0.6.13: flexible timeframe galleries and comfortable settings modal */
+.flexible-gallery,#btRowImageGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch;margin-top:14px}
+.capture-card,.capture-add{min-width:0;border:1px solid var(--border);border-radius:14px;background:var(--panel2);overflow:hidden;box-shadow:0 3px 16px #00000012}
+.capture-card{padding:10px;display:flex;flex-direction:column;gap:10px}
+.capture-card-toolbar{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.capture-card-toolbar select{min-width:0;flex:1;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:9px;font:650 12px 'JetBrains Mono',monospace;cursor:pointer}
+.capture-remove{width:32px;height:32px;flex:0 0 32px;border:1px solid var(--border);background:var(--panel);color:var(--muted);border-radius:9px;cursor:pointer;font-size:19px}
+.capture-remove:hover{color:var(--red);border-color:var(--red)}
+.capture-card .view-image{width:100%;height:185px;display:block;object-fit:contain;background:#090b10;border-radius:9px;cursor:zoom-in;transition:filter .18s ease}
+.capture-card .view-image:hover{filter:brightness(1.12)}
+.capture-add{min-height:249px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font:700 27px Inter,'Segoe UI',sans-serif;color:var(--muted);border:1px dashed #526071;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
+.capture-add:hover{background:var(--hover);border-color:#94a1b5;color:var(--text)}
+.capture-add span{font-size:13px;color:var(--text)}.capture-add small{font-weight:500;font-size:10px;color:var(--muted)}
+.settings-modal{width:min(610px,96vw)}
+.settings-checkbox{display:flex;align-items:center;gap:12px;padding:13px 15px;border:1px solid var(--border);background:var(--panel2);border-radius:12px;margin-bottom:20px;font-size:12px;font-weight:650}
+.settings-checkbox input{width:17px;height:17px;accent-color:#d35a61}
+.settings-modal .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.settings-modal .form-grid label:first-child{grid-column:1/-1}
+.settings-modal .form-grid span:empty{display:none}
+.settings-modal .form-grid input,.settings-modal .form-grid select{font:600 14px 'JetBrains Mono',Consolas,monospace;padding:12px 13px}
+.settings-hint{font-size:11px;line-height:1.75;color:var(--muted);padding:13px 14px;margin:20px 0 0;border-radius:12px;border:1px solid var(--border);background:var(--panel2)}
+.screenshot-tf-modal{width:min(480px,96vw)}
+#screenshotTfCustom{display:block;margin-top:12px;width:100%;font:600 14px 'JetBrains Mono',monospace;border-radius:10px;border:1px solid var(--border);background:var(--panel2);color:var(--text);padding:12px}
+#screenshotTfCustom.hidden{display:none}
+@media (max-width:940px){.flexible-gallery,#btRowImageGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.flexible-gallery,#btRowImageGrid{grid-template-columns:1fr}.capture-card .view-image{height:240px}}
