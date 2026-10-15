@@ -1,0 +1,25 @@
+/* Backtest ZIP importer: compact dark/light compatible dialog. */
+.bt-import-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px}
+.notion-backtest-modal{width:min(750px,calc(100vw - 34px));max-height:min(90vh,940px);overflow:auto}
+.bt-notion-fields{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:18px 0}
+.bt-notion-fields label{display:flex;flex-direction:column;gap:8px;font-weight:650;font-size:13px}
+.bt-notion-fields input{width:100%;min-width:0;box-sizing:border-box}
+.bt-notion-fields small{color:var(--muted,#8e96a7);font-size:11px;line-height:1.6;font-weight:400}
+.bt-notion-preview{margin:14px 0 8px;min-height:50px;padding:14px 16px;background:var(--surface,#16181e);border:1px solid var(--border,#343741);border-radius:14px;line-height:1.7;font-size:13px;overflow-wrap:anywhere}
+.bt-notion-project{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 3px;border-bottom:1px solid var(--border,#343741)}
+.bt-notion-project:last-child{border-bottom:0}
+.bt-notion-meta{color:var(--muted,#8e96a7);font-size:12px}
+.bt-notion-sample{overflow:auto;max-height:205px;margin-top:12px}
+.bt-notion-sample table{min-width:520px;width:100%;border-collapse:collapse;font-size:11px}
+.bt-notion-sample td,.bt-notion-sample th{text-align:left;padding:9px 6px;border-bottom:1px solid var(--border,#343741)}
+.bt-notion-warning{color:var(--red,#ff626d)}
+@media(max-width:680px){.bt-notion-fields{grid-template-columns:1fr}.bt-import-actions{justify-content:flex-start}}
+/* Consistent form controls in the Notion backtest import modal. */
+.bt-notion-fields input{
+  width:100%;min-width:0;min-height:42px;padding:10px 13px;
+  border:1px solid var(--border,#30343c);border-radius:10px;
+  background:var(--panel2,#15171c);color:var(--text,#e6e9f1);
+  font:500 12px/1.5 Inter,Segoe UI,Arial,sans-serif;
+  outline:none;transition:border-color .18s ease,box-shadow .18s ease;
+}
+.bt-notion-fields input:focus-visible{border-color:#8b97aa;box-shadow:0 0 0 3px #a2b1ca18}

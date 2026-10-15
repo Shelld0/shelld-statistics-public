@@ -1,23 +1,25 @@
-# v1.0.1 — One-click Windows installer (Public Beta)
+# Shelld Statistics v0.8.16 — Personal FTMO
 
-- Package optional MT5 Python bridge as separate built-in Windows EXE using PyInstaller on Windows build runner.
-- Installed journal no longer requires external Node.js or Python for any feature. Auto-import still requires an installed desktop MT5 terminal.
-- Prefer bundled bridge when Python field is empty; explicit developer Python path remains supported.
-- Bundle and smoke-test the bridge before building NSIS Setup.exe.
-- Update first launch, guides, build workflow and release checksum.
-- No personal FTMO data, no database reset.
-- **Source ZIP is not a Windows installer. Actual EXE must be built/tested on Windows Actions before publication.**
+- Импорт ZIP / CSV из Notion напрямую в **Trading Journal** и **Backtest**; Backtest создаёт `Swing · EUR · 2026` и не изменяет живой журнал.
+- Автоматическое извлечение PNG / JPG / WEBP **из того же ZIP** и прикрепление к правильной сделке в галерею «Результат» по явным ссылкам CSV, Notion ID или ссылкам связанной страницы Markdown.
+- Непривязанные изображения не распределяются по сделкам наугад; их количество показано в предпросмотре и после импорта.
+- Импорт исходного архива с двумя CSV не удваивает сделки, повторная загрузка не удваивает уже сохранённые скриншоты.
+- По умолчанию включена функция «Импортировать сразу после выбора файла»: после записи в SQLite окно закрывается и восемь секунд отображается количество новых сделок, скриншотов, повторов и непривязанных изображений.
+- Если нужна проверка перед сохранением, можно выключить автоматический режим.
+- Сохранены прежние личные настройки FTMO, папка SQLite, MT5 и все существующие сделки, планы, бектесты, изображения.
+- Перед импортом создаётся Backup. Вложения хранятся в исходном формате без сжатия; из ZIP не выполняется код и файлы не записываются на диск.
 
----
+**Примечание:** исходный пример Notion из этой беседы содержит две CSV-таблицы (29 уникальных сделок), но **ни одного скриншота**. Импортирует 29 сделок / 0 изображений. Для автопереноса картинок экспортируй в ZIP вместе с файлами PNG/JPG/WEBP.
 
-# Shelld Statistics Public Beta v1.0.0
+# Shelld Statistics v0.8.14 — Personal FTMO
 
-- First clean public distribution from the v0.8.8 codebase.
-- Removed FTMO account preset, login, server and computer-specific absolute paths.
-- Independent `%APPDATA%/Shelld Statistics Public Beta` user-data folder, separate from private editions.
-- One-time welcome screen supporting offline manual journal without MetaTrader5.
-- Retains Trading Journal, Backtest, Weekly Plans, Telegram Export Studio, image editor and automatic backups.
-- Compact Analytics: Long vs Short, drawdown series, model comparison; no heatmap, no R histogram.
-- Windows NSIS installer workflow added for GitHub Actions, signed install requires separate publisher configuration.
+## Импорт Notion Markdown & CSV ZIP
+- Просто выбери оригинальный ZIP из Notion: оба CSV распознаются автоматически.
+- Повторные таблицы `_all.csv` и `.csv` не создают двойные сделки.
+- Колонки `Number`, `Opened`, `Ticker`, `Direct`, `Result`, `RR`, `model`, `Select` поддерживаются без изменения исходных файлов.
+- Даты вида `2 January 2026` распознаются без выдумывания времени.
+- Риск на сделку указывается перед импортом, например `1` или `0,5` процента; при наличии R результат (%) вычисляется автоматически.
+- Дубли после повторного импорта пропускаются; перед записью сохраняется локальный Backup SQLite.
+- Процент не вычисляется, если риск не задан; пустые даты и часы можно вписать позже.
 
-**Beta status:** Build and test locally or in GitHub Actions before distribution; no bundled EXE in this source archive.
+Обновление не стирает существующие сделки, аккаунты, бектесты или настройки MT5.

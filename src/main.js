@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, screen, Menu, safeStorage, clipboard, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const crypto = require('node:crypto');
 const { percentFromCapital } = require('./mt5-profit');
 const { newLocks, mt5Patch } = require('./mt5-merge');
 const { spawn } = require('node:child_process');
@@ -9,12 +10,15 @@ const initSqlJs = require('sql.js');
 const {deletionSteps}=require('./account-removal');
 const backupPolicy=require('./backup-policy');
 const imageOrder=require('./image-order');
+const {positiveCapital,analyzeNotionCSV}=require('./import-utils');
+const {analyzeNotionExportZip,analyzeNotionExportCsv,assignNotionImages}=require('./notion-zip');
+const {groupNotionBacktests}=require('./backtest-notion');
+let pendingBacktestNotion=null;
+const {emptyDuplicateIds}=require('./account-duplicates');
+let pendingNotion=null;
 
-// Intentionally separate from the private edition and other profiles on this Windows PC.
-// The installer does not migrate or read the personal edition's local database.
-const publicDataRoot=path.join(app.getPath('appData'),'Shelld Statistics Public Beta');
-fs.mkdirSync(publicDataRoot,{recursive:true});
-app.setPath('userData',publicDataRoot);
+// Public Beta uses its own Electron userData folder through the distinct productName.
+// Do not load private profile presets or read data from the Personal Edition.
 
 let SQL, db, dbPath;
 let mt5Config = null;
@@ -111,6 +115,10 @@ async function initDb() {
   `);
   applyMigrations();
   migrateAccounts();
+  db.run(`CREATE TABLE IF NOT EXISTS account_groups(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS account_group_members(group_id INTEGER NOT NULL,account_id INTEGER NOT NULL,PRIMARY KEY(group_id,account_id));`);
+  const archiveCols=run('PRAGMA table_info(accounts)').map(c=>c.name);
+  if(!archiveCols.includes('archived_at'))db.run('ALTER TABLE accounts ADD COLUMN archived_at TEXT');
   // No automatic reset in this maintenance release; preserve all user data.
   persist();
 }
@@ -161,6 +169,14 @@ function applyMigrations() {
     CREATE TABLE IF NOT EXISTS backtest_images (id INTEGER PRIMARY KEY AUTOINCREMENT,backtest_trade_id INTEGER NOT NULL,mime TEXT NOT NULL,image BLOB NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP);`);
   const btCols=run('PRAGMA table_info(backtest_trades)').map(c=>c.name);
   if(!btCols.includes('risk_pct'))db.run('ALTER TABLE backtest_trades ADD COLUMN risk_pct REAL NOT NULL DEFAULT 1');
+  // Imported Backtests carry stable keys so re-importing a Notion ZIP cannot duplicate rows.
+  const projectCols=run('PRAGMA table_info(backtests)').map(c=>c.name);
+  if(!projectCols.includes('import_collection_key'))db.run('ALTER TABLE backtests ADD COLUMN import_collection_key TEXT');
+  if(!btCols.includes('source_key'))db.run('ALTER TABLE backtest_trades ADD COLUMN source_key TEXT');
+  if(!btCols.includes('r_known'))db.run('ALTER TABLE backtest_trades ADD COLUMN r_known INTEGER NOT NULL DEFAULT 1');
+  if(!btCols.includes('percent_known'))db.run('ALTER TABLE backtest_trades ADD COLUMN percent_known INTEGER NOT NULL DEFAULT 1');
+  db.run('CREATE UNIQUE INDEX IF NOT EXISTS ux_backtest_source ON backtest_trades(backtest_id,source_key) WHERE source_key IS NOT NULL');
+  db.run('CREATE UNIQUE INDEX IF NOT EXISTS ux_backtest_import_collection ON backtests(account_id,import_collection_key) WHERE import_collection_key IS NOT NULL');
   // MT5 metadata: imported percentages and R may be unknown; never misrepresent these as zero.
   const tradeCols=run('PRAGMA table_info(trades)').map(c=>c.name);
   const fields=[
@@ -200,7 +216,8 @@ function migrateAccounts(){
   )`);
   let defaultAccount=run('SELECT id FROM accounts ORDER BY id LIMIT 1')[0]?.id;
   if(!defaultAccount){
-    // Public Beta: no trading login, server, account funds or computer paths in a fresh install.
+    // Never ship a preset account with personal broker credentials.
+    // Fresh public installs use a blank manual profile.
     db.run('INSERT INTO accounts(label,broker,mt5_login,mt5_server,mt5_python,mt5_terminal,mt5_basis,currency) VALUES(?,?,?,?,?,?,?,?)',
       ['Мой счёт','Manual','','','','',0,'EUR']);
     defaultAccount=run('SELECT id FROM accounts ORDER BY id LIMIT 1')[0].id;
@@ -258,16 +275,33 @@ function updateProfile(id,p){
   const rows=run("SELECT COUNT(*) AS total FROM trades WHERE account_id=? AND source='mt5'",[id])[0].total;
   if(rows>0 && ((before.mt5_login && login!==before.mt5_login) || (before.mt5_server && server!==before.mt5_server)))
     throw new Error('Для другого логина или сервера MT5 создай отдельный счёт, чтобы история не смешалась');
-  const basis=Number(p.mt5_basis??before.mt5_basis);
-  if(!Number.isFinite(basis)||basis<0||basis>1e12)throw new Error('Некорректный капитал');
+  const nextCurrency=String(p.currency??before.currency).trim().toUpperCase();
+  if(!/^[A-Z]{3,8}$/.test(nextCurrency))throw new Error('Валюта должна содержать 3–8 латинских букв, например EUR');
+  if(nextCurrency!==before.currency && run("SELECT id FROM trades WHERE account_id=? AND source='mt5' LIMIT 1",[id]).length)
+    throw new Error('У счёта уже есть MT5-сделки. Для смены валюты создай отдельный счёт, чтобы не исказить проценты');
+  const basis=positiveCapital(p.mt5_basis??before.mt5_basis,{allowZero:false});
+  const needsReprice=basis>0 && run(`SELECT COUNT(*) AS n FROM trades
+    WHERE account_id=? AND source='mt5' AND profit_money IS NOT NULL
+    AND (percent_known=0 OR (percent_basis>0 AND ABS(percent_basis-?)>0.000001))
+    AND instr(COALESCE(mt5_manual_fields,'[]'),'gain_pct')=0`,[id,basis])[0].n>0;
+  if(needsReprice)createAutoBackup(true);
   const days=Math.min(3650,Math.max(1,Number(p.mt5_days??before.mt5_days)||365));
   db.run(`UPDATE accounts SET label=?,broker=?,mt5_login=?,mt5_server=?,mt5_python=?,mt5_terminal=?,mt5_basis=?,mt5_days=?,mt5_auto=?,currency=? WHERE id=?`,
     [label,broker,login,server,
      String(p.mt5_python??before.mt5_python).trim().slice(0,600),
      String(p.mt5_terminal??before.mt5_terminal).trim().slice(0,600),basis,days,
      p.mt5_auto===undefined?before.mt5_auto:(p.mt5_auto?1:0),
-     String(p.currency??before.currency).trim().toUpperCase().slice(0,8)||'EUR',id]);
+     nextCurrency,id]);
   if((before.mt5_login!==login || before.mt5_server!==server) && fs.existsSync(secretPath(id)))fs.unlinkSync(secretPath(id));
+  // Reprice imported MT5 P&L after capital is supplied or corrected, even if
+  // the broker has disabled the old phase login. Manual overrides stay intact.
+  if(needsReprice){
+    db.run(`UPDATE trades SET gain_pct=ROUND(profit_money * 100.0 / ?, 8), percent_known=1, percent_basis=?
+      WHERE account_id=? AND source='mt5' AND profit_money IS NOT NULL
+      AND (percent_known=0 OR (percent_basis>0 AND ABS(percent_basis-?)>0.000001))
+      AND instr(COALESCE(mt5_manual_fields,'[]'),'gain_pct')=0`,[basis,basis,id,basis]);
+  }
+  if(mt5Config?.accountId===Number(id))mt5Config.basis=basis;
   persist();return accountProfile(id);
 }
 
@@ -394,6 +428,10 @@ function runBridge(config){
 }
 function importFromMt5(data, config){
   const account=Number(data.account_login), denom=Number(config.basis);
+  const accountCurrency=String(accountProfile(config.accountId).currency||'').trim().toUpperCase();
+  const brokerCurrency=String(data.currency||'').trim().toUpperCase();
+  if(brokerCurrency&&accountCurrency!==brokerCurrency)
+    throw new Error(`Валюта профиля (${accountCurrency}) отличается от валюты MT5 (${brokerCurrency}). Измени валюту счёта в настройках и введи капитал в ${brokerCurrency}. Импорт остановлен, чтобы не считать неверный процент.`);
   if(account!==Number(config.login))throw new Error('Данные принадлежат другому счёту');
   if(activeAccountId()!==Number(config.accountId))throw new Error('Счёт переключён во время синхронизации');
   // Compare imported money P&L (including live positions) to the configured
@@ -472,11 +510,246 @@ ipcMain.handle('accounts:list',()=>run(`SELECT a.*,
 ipcMain.handle('accounts:active',()=>({profile:accountProfile(),hasSavedPassword:hasStoredSecret(activeAccountId())}));
 ipcMain.handle('accounts:create',(_,p)=>{
   const label=checkAccountText(p?.label,'Название счёта');
-  db.run('INSERT INTO accounts(label,broker,currency) VALUES(?,?,?)',[label,String(p.broker||'Manual').slice(0,70),String(p.currency||'EUR').toUpperCase().slice(0,8)]);
-  const id=run('SELECT last_insert_rowid() AS id')[0].id;
-  updateProfile(id,p);return accountProfile(id);
+  const broker=String(p?.broker||'Manual').trim().slice(0,70)||'Manual';
+  const currency=String(p?.currency||'EUR').trim().toUpperCase().slice(0,8)||'EUR';
+  // Capital and currency are required when a new profile is created.
+  // MT5 login/server/credentials can only be configured through MT5 Connect.
+  if(!String(p?.mt5_basis??'').trim())throw new Error('Укажи базовый капитал нового счёта');
+  const basis=positiveCapital(p?.mt5_basis,{allowZero:false});
+  if(!/^[A-Z]{3,8}$/.test(currency))throw new Error('Валюта должна содержать 3–8 латинских букв, например EUR');
+  // Capture the last insert ID BEFORE exporting sql.js: db.export() reopens SQLite
+  // internally and last_insert_rowid() can then be 0. The old order created an
+  // account but reported an error, causing users to create duplicates on retry.
+  if(run('SELECT id FROM accounts WHERE lower(trim(label))=lower(?) AND archived_at IS NULL LIMIT 1',[label]).length)
+    throw new Error('Счёт с таким названием уже есть. Выбери другое название, например «Phase 2».');
+  db.run(`INSERT INTO accounts(label,broker,currency,mt5_basis)
+    VALUES(?,?,?,?)`,[label,broker,currency,basis]);
+  const createdId=Number(run('SELECT last_insert_rowid() AS id')[0]?.id);
+  if(!Number.isSafeInteger(createdId)||createdId<1)throw new Error('Не удалось получить ID нового счёта');
+  persist();
+  return accountProfile(createdId);
 });
 ipcMain.handle('accounts:update',(_,p)=>updateProfile(activeAccountId(),p||{}));
+ipcMain.handle('accounts:archive',(_,id,flag)=>{
+  const profile=accountProfile(id);
+  if(mt5Busy)throw new Error('Дождись завершения синхронизации MT5');
+  if(flag && Number(id)===activeAccountId())stopMt5();
+  let snapshotPath=null;
+  if(flag){
+    // Immutable history snapshot outside the rotating daily-backup folder.
+    const folder=path.join(app.getPath('userData'),'phase-archives');fs.mkdirSync(folder,{recursive:true});
+    persist();const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    snapshotPath=path.join(folder,`phase-${profile.id}-${stamp}.sqlite`);
+    fs.writeFileSync(snapshotPath,Buffer.from(db.export()),{flag:'wx',mode:0o600});
+    const header=fs.readFileSync(snapshotPath).subarray(0,16).toString('ascii');
+    if(header!=='SQLite format 3\0')throw new Error('Не удалось подтвердить архивную SQLite-копию');
+  }
+  db.run('UPDATE accounts SET archived_at=? WHERE id=?',[flag?new Date().toISOString():null,profile.id]);
+  persist();return {...accountProfile(id),snapshotPath};
+});
+ipcMain.handle('groups:list',()=>run(`SELECT g.id,g.name, group_concat(m.account_id) AS member_ids,
+  COUNT(m.account_id) AS members FROM account_groups g LEFT JOIN account_group_members m ON m.group_id=g.id
+  GROUP BY g.id ORDER BY g.id`));
+ipcMain.handle('groups:create',(_,name,ids)=>{
+  const title=checkAccountText(name,'Название группы',90);
+  const members=[...new Set((Array.isArray(ids)?ids:[]).map(Number))];
+  if(members.length<2)throw new Error('Выбери минимум два счёта (например, Phase 1 и Phase 2)');
+  const records=members.map(id=>accountProfile(id));
+  if(new Set(records.map(a=>a.currency)).size>1)throw new Error('Для общего процента счета должны иметь одинаковую валюту');
+  db.run('BEGIN TRANSACTION');
+  try{
+    db.run('INSERT INTO account_groups(name) VALUES(?)',[title]);
+    const groupId=run('SELECT last_insert_rowid() AS id')[0].id;
+    for(const id of members)db.run('INSERT INTO account_group_members(group_id,account_id) VALUES(?,?)',[groupId,id]);
+    db.run('COMMIT');persist();return {id:groupId,name:title,members:members.length};
+  }catch(e){try{db.run('ROLLBACK');}catch{}throw e;}
+});
+ipcMain.handle('groups:delete',(_,id)=>{
+  db.run('DELETE FROM account_group_members WHERE group_id=?',[Number(id)]);
+  exec('DELETE FROM account_groups WHERE id=?',[Number(id)]);return true;
+});
+ipcMain.handle('groups:add-member',(_,groupId,rawAccountId)=>{
+  const id=Number(groupId),accountId=Number(rawAccountId);
+  const group=run('SELECT id,name FROM account_groups WHERE id=?',[id])[0];
+  if(!group)throw new Error('Группа не найдена');
+  const profile=accountProfile(accountId);
+  const memberCurrencies=run(`SELECT DISTINCT a.currency FROM accounts a
+    JOIN account_group_members m ON m.account_id=a.id WHERE m.group_id=?`,[id]).map(row=>row.currency);
+  if(memberCurrencies.length&&memberCurrencies.some(currency=>currency!==profile.currency))
+    throw new Error('Нельзя объединить счета с разной валютой');
+  if(run('SELECT 1 FROM account_group_members WHERE group_id=? AND account_id=?',[id,accountId]).length)
+    return {added:false,groupId:id,accountId};
+  exec('INSERT INTO account_group_members(group_id,account_id) VALUES(?,?)',[id,accountId]);
+  return {added:true,groupId:id,accountId};
+});
+// Only redundant EMPTY account profiles can be removed. No trade, image, plan,
+// backtest, group membership or active MT5 profile is ever silently deleted.
+function removableDuplicateAccounts(){
+  const rows=run(`SELECT a.id,a.label,a.broker,a.currency,a.mt5_login,a.mt5_server,a.archived_at,
+   (SELECT COUNT(*) FROM trades t WHERE t.account_id=a.id) trades_count,
+   (SELECT COUNT(*) FROM plans p WHERE p.account_id=a.id) plans_count,
+   (SELECT COUNT(*) FROM weekly_plans w WHERE w.account_id=a.id) weeks_count,
+   (SELECT COUNT(*) FROM backtests b WHERE b.account_id=a.id) backtests_count,
+   (SELECT COUNT(*) FROM studio_result_images i WHERE i.account_id=a.id) studio_images_count,
+   (SELECT COUNT(*) FROM account_group_members m WHERE m.account_id=a.id) group_count
+   FROM accounts a ORDER BY a.id`);
+  return emptyDuplicateIds(rows,activeAccountId()).filter(id=>!hasStoredSecret(id)&&mt5Config?.accountId!==id);
+}
+ipcMain.handle('accounts:duplicate-preview',()=>{
+  const ids=removableDuplicateAccounts();
+  return {count:ids.length,accounts:ids.map(id=>accountProfile(id)).map(a=>({id:a.id,label:a.label,broker:a.broker}))};
+});
+ipcMain.handle('accounts:cleanup-empty-duplicates',()=>{
+  if(mt5Busy)throw new Error('Дождись окончания синхронизации MT5');
+  const ids=removableDuplicateAccounts();
+  if(!ids.length)return {removed:0,backupPath:null};
+  // Account cleanup must not depend on auto-backup rotation.
+  const archive=path.join(app.getPath('userData'),'account-backups');
+  fs.mkdirSync(archive,{recursive:true,mode:0o700});
+  const dest=path.join(archive,'before-empty-duplicate-cleanup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.sqlite');
+  const bytes=Buffer.from(db.export());
+  fs.writeFileSync(dest,bytes,{flag:'wx',mode:0o600});
+  if(fs.statSync(dest).size!==bytes.length||bytes.subarray(0,16).toString('ascii')!=='SQLite format 3\0')
+    throw new Error('Не удалось проверить резервную копию. Очистка отменена.');
+  db.run('BEGIN TRANSACTION');
+  try{
+    for(const id of ids){
+      const stillSafe=removableDuplicateAccounts().includes(id);
+      if(!stillSafe)throw new Error('Состав счетов изменился; очистка отменена');
+      db.run('DELETE FROM accounts WHERE id=?',[id]);
+    }
+    db.run('COMMIT');persist();
+  }catch(error){try{db.run('ROLLBACK');}catch{}throw error;}
+  return {removed:ids.length,backupPath:dest};
+});
+ipcMain.handle('groups:trades',(_,id)=>{
+  if(!run('SELECT id FROM account_groups WHERE id=?',[Number(id)]).length)throw new Error('Группа не найдена');
+  return run(`SELECT t.*,a.label AS account_label,a.currency AS account_currency FROM trades t
+    JOIN account_group_members m ON m.account_id=t.account_id JOIN accounts a ON a.id=t.account_id
+    WHERE m.group_id=? ORDER BY t.opened_at DESC,t.id DESC`,[Number(id)]);
+});
+// Read a Notion CSV or the original Markdown & CSV ZIP. Never extract ZIP files to disk.
+const validNotionRisk=raw=>{
+  const input=String(raw??'').trim();
+  if(!input)return null; // user can import R without a fabricated percentage
+  const n=positiveCapital(input,{allowZero:false});
+  if(n>100)throw new Error('Риск на одну сделку не должен превышать 100%');
+  return n;
+};
+function analyzeNotionFile(fileBuffer,fileName,accountId,riskPct){
+  const suffix=path.extname(fileName).toLowerCase();
+  if(suffix==='.zip')return analyzeNotionExportZip(fileBuffer,accountId,{riskPct});
+  if(suffix==='.csv'){
+    const csv=new TextDecoder('utf-8',{fatal:true}).decode(fileBuffer);
+    return analyzeNotionExportCsv(csv,accountId,{riskPct,filename:fileName});
+  }
+  throw new Error('Поддерживаются только ZIP или CSV из Notion');
+}
+function notionPreviewResponse(record){
+  const {analysis,filename,riskPct}=record;
+  return {canceled:false,filename,valid:analysis.valid.length,invalid:analysis.invalid?.length||0,
+    incomplete:analysis.incomplete,total:analysis.total,duplicateRows:analysis.duplicateRows||0,
+    imagesInZip:analysis.imagesInZip||0,matchedImages:analysis.matchedImages||0,
+    unmatchedImages:analysis.unmatchedImages||0,
+    unmatchedFiles:analysis.unmatchedFiles||[],previewTrades:analysis.previewTrades||[],
+    fileCount:analysis.files?.length||1,riskPct,
+    invalidRows:(analysis.invalid||[]).slice(0,10),
+    examples:analysis.valid.slice(0,7).map(t=>({date:t.opened_at,asset:t.asset,result:t.result,
+      gain:t.percent_known?t.gain_pct:null,rr:t.r_known?t.r_multiple:null,missing:t.missing}))};
+}
+ipcMain.handle('notion:preview',async(_,rawRisk)=>{
+  const riskPct=validNotionRisk(rawRisk);
+  const pick=await dialog.showOpenDialog({title:'Импорт Notion: архив ZIP или таблица CSV',
+    filters:[{name:'Экспорт Notion ZIP / CSV',extensions:['zip','csv']}],properties:['openFile']});
+  if(pick.canceled||!pick.filePaths?.[0])return {canceled:true};
+  const file=pick.filePaths[0],maxBytes=220*1024*1024;
+  if(fs.statSync(file).size>maxBytes)throw new Error('Файл должен быть меньше 220 МБ');
+  const bytes=fs.readFileSync(file),id=activeAccountId();
+  const analysis=analyzeNotionFile(bytes,file,id,riskPct);
+  pendingNotion={analysis,accountId:id,filename:path.basename(file),riskPct,bytes};
+  return notionPreviewResponse(pendingNotion);
+});
+ipcMain.handle('notion:recalculate',(_,rawRisk)=>{
+  if(!pendingNotion||pendingNotion.accountId!==activeAccountId())
+    throw new Error('Выбери ZIP или CSV для текущего торгового счёта');
+  const riskPct=validNotionRisk(rawRisk);
+  const analysis=analyzeNotionFile(pendingNotion.bytes,pendingNotion.filename,pendingNotion.accountId,riskPct);
+  pendingNotion={...pendingNotion,analysis,riskPct};
+  return notionPreviewResponse(pendingNotion);
+});
+function saveNotionAttachments(kind,ownerId,entry){
+  const pictures=Array.isArray(entry.notionImages)?entry.notionImages:[];
+  if(!pictures.length)return {added:0,duplicates:0};
+  const tradeId=Number(ownerId);
+  if(!Number.isSafeInteger(tradeId)||tradeId<=0)throw new Error('Неверный идентификатор сделки');
+  const journal=kind==='trade';
+  if(!journal&&kind!=='backtest')throw new Error('Некорректная галерея импорта');
+  const table=journal?'trade_result_images':'backtest_result_images';
+  const column=journal?'trade_id':'backtest_trade_id';
+  const previous=run(`SELECT mime,image FROM ${table} WHERE ${column}=?`,[tradeId]);
+  const hashes=new Set(previous.map(pic=>crypto.createHash('sha256').update(String(pic.mime)+'|').update(Buffer.from(pic.image)).digest('hex')));
+  let added=0,duplicates=0;
+  for(const image of pictures){
+    if(!['image/png','image/jpeg','image/webp'].includes(image.mime)||!Buffer.isBuffer(image.bytes))continue;
+    const hash=crypto.createHash('sha256').update(image.mime+'|').update(image.bytes).digest('hex');
+    if(hashes.has(hash)){duplicates++;continue;}
+    db.run(`INSERT INTO ${table}(${column},mime,image) VALUES(?,?,?)`,[tradeId,image.mime,image.bytes]);
+    hashes.add(hash);added++;
+  }
+  return {added,duplicates};
+}
+function sameOriginalNotionRow(a,b){
+  const field=(text,name)=>{
+    const match=new RegExp('^'+name+':\\s*(.+)$','mi').exec(String(text||''));
+    return match?match[1].trim().toLowerCase().replace(/\s+/g,' '):'';
+  };
+  // Older releases used row-order-dependent external keys. Check raw Notion columns
+  // to avoid duplicating previously imported rows during the first ZIP import.
+  const keys=['Number','Opened','Ticker','Direct'];
+  return keys.every(key=>field(a.notes,key)&&field(a.notes,key)===field(b.notes,key));
+}
+// Optional on-demand image preview for manually matching ambiguous Notion pages.
+// Image bytes stay on the local PC and are never exposed beyond this IPC call.
+ipcMain.handle('notion:image-preview',(_,kind,filename)=>{
+  const pending=kind==='backtest'?pendingBacktestNotion:kind==='journal'?pendingNotion:null;
+  if(!pending||pending.accountId!==activeAccountId())throw new Error('Импорт уже закрыт');
+  const pic=(pending.analysis.unmatchedPictures||[]).find(image=>image.filename===filename);
+  if(!pic)throw new Error('Изображение не найдено в выбранном ZIP');
+  return `data:${pic.mime};base64,${pic.bytes.toString('base64')}`;
+});
+ipcMain.handle('notion:import',(_,assignments=[])=>{
+  if(!pendingNotion||pendingNotion.accountId!==activeAccountId())throw new Error('Сначала выбери ZIP/CSV заново для текущего счёта');
+  const items=pendingNotion.analysis.valid,id=activeAccountId();
+  if(!items.length)throw new Error('Нет строк для импорта');
+  const manualCount=assignNotionImages(pendingNotion.analysis,assignments);
+  const backup=createAutoBackup(true);
+  const existingNotion=run("SELECT id,notes FROM trades WHERE account_id=? AND source='notion'",[id]);
+  let imported=0,duplicates=0,imagesAdded=0,imagesDuplicates=0;
+  db.run('BEGIN TRANSACTION');
+  try{
+    for(const t of items){
+      const exact=run('SELECT id FROM trades WHERE account_id=? AND external_key=?',[id,t.external_key])[0];
+      const prior=exact||existingNotion.find(e=>sameOriginalNotionRow(e,t));
+      let tradeId;
+      if(prior){duplicates++;tradeId=prior.id;}
+      else{
+        db.run(`INSERT INTO trades
+        (opened_at,closed_at,asset,direction,model,result,gain_pct,r_multiple,notes,trade_type,account_id,
+          source,external_key,percent_known,r_known)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [t.opened_at,t.closed_at,t.asset,t.direction,t.model,t.result,t.gain_pct,t.r_multiple,t.notes,t.trade_type,
+         id,'notion',t.external_key,t.percent_known,t.r_known]);
+        tradeId=run('SELECT last_insert_rowid() AS id')[0].id;imported++;
+      }
+      const added=saveNotionAttachments('trade',tradeId,t);
+      imagesAdded+=added.added;imagesDuplicates+=added.duplicates;
+    }
+    db.run('COMMIT');persist();
+    const unmatchedImages=pendingNotion.analysis.unmatchedImages||0;
+    pendingNotion=null;
+    return {imported,duplicates,imagesAdded,imagesDuplicates,unmatchedImages:Math.max(0,unmatchedImages-manualCount),backup};
+  }catch(e){try{db.run('ROLLBACK');}catch{}throw e;}
+});
 ipcMain.handle('accounts:select',(_,id)=>{
   if(mt5Busy)throw new Error('Дождись завершения синхронизации MT5');
   accountProfile(id);
@@ -512,6 +785,7 @@ ipcMain.handle('accounts:delete', (_, rawId, confirmedLabel) => {
       (kind IN ('trade-captures','trade-results') AND owner_id IN (SELECT id FROM trades WHERE account_id=?)) OR
       (kind IN ('backtest-captures','backtest-results') AND owner_id IN (SELECT bt.id FROM backtest_trades bt JOIN backtests b ON b.id=bt.backtest_id WHERE b.account_id=?)) OR
       (kind='weekly-asset' AND owner_id IN (SELECT a.id FROM weekly_plan_assets a JOIN weekly_plans p ON p.id=a.plan_id WHERE p.account_id=?))`,[id,id,id]);
+    db.run('DELETE FROM account_group_members WHERE account_id=?',[id]);
     for(const [sql,params] of deletionSteps(id))db.run(sql,params);
     db.run('COMMIT');
     persist();
@@ -534,8 +808,10 @@ ipcMain.handle('mt5:connect',async(_,config)=>{
   if(!Number.isSafeInteger(login)||login<=0)throw new Error('Укажи числовой логин MT5');
   const id=activeAccountId();
   const profile=accountProfile(id);
+  if(profile.archived_at)throw new Error('Эта фаза архивирована. Сними архивный статус, чтобы подключить MT5');
   if(profile.mt5_login && profile.mt5_login!==String(login) && run("SELECT id FROM trades WHERE account_id=? AND source='mt5' LIMIT 1",[id]).length)throw new Error('Этот профиль уже содержит сделки другого MT5. Создай новый профиль');
   if(profile.mt5_server && profile.mt5_server!==String(config.server||'').trim() && run("SELECT id FROM trades WHERE account_id=? AND source='mt5' LIMIT 1",[id]).length)throw new Error('Для другого сервера MT5 создай отдельный профиль, чтобы не смешивать сделки');
+  const basis=positiveCapital(config?.basis,{allowZero:false});
   const password=String(config?.password||'') || (config?.rememberPassword?storedPassword(id):'');
   if(!password)throw new Error('Введи пароль MT5 или включи использование защищённо сохранённого пароля');
   if(!String(config?.server||'').trim())throw new Error('Укажи сервер брокера из окна MT5');
@@ -544,10 +820,10 @@ ipcMain.handle('mt5:connect',async(_,config)=>{
     terminal:String(config.terminal||'').trim().slice(0,600),
     python:String(config.python||'').trim().slice(0,600),
     days:Math.max(1,Math.min(3650,Number(config.days)||365)),
-    basis:Number(config.basis)||0};
+    basis};
   try{
     const result=await mt5Sync();
-    updateProfile(id,{mt5_login:String(login),mt5_server:mt5Config.server,mt5_python:mt5Config.python,mt5_terminal:mt5Config.terminal,mt5_basis:mt5Config.basis,mt5_days:mt5Config.days,mt5_auto:config.auto!==false});
+    updateProfile(id,{broker:String(config.broker||profile.broker).trim()||'Manual',mt5_login:String(login),mt5_server:mt5Config.server,mt5_python:mt5Config.python,mt5_terminal:mt5Config.terminal,mt5_basis:mt5Config.basis,mt5_days:mt5Config.days,mt5_auto:config.auto!==false});
     if(config.rememberPassword){savePassword(id,password)}else if(fs.existsSync(secretPath(id))){fs.unlinkSync(secretPath(id));}
     if(config.auto!==false){mt5Timer=setInterval(()=>{if(mt5Config&&!mt5Busy)mt5Sync().catch(()=>{})},60000);}
     return {...result,status:mt5PublicStatus()};
@@ -558,16 +834,18 @@ ipcMain.handle('mt5:status',()=>mt5PublicStatus());
 ipcMain.handle('mt5:disconnect',()=>{stopMt5();return mt5PublicStatus();});
 
 ipcMain.handle('trades:list', () => run('SELECT * FROM trades WHERE account_id=? ORDER BY opened_at DESC, id DESC',[activeAccountId()]));
-const validTrade = t => {
+const validTrade = (t,{allowIncomplete=false}={}) => {
   const type = t.trade_type === 'Intraday' ? 'Intraday' : 'Swing';
-  const result = ['WIN', 'LOSS', 'BE', 'OPEN'].includes(t.result) ? t.result : 'OPEN';
+  const result = ['WIN', 'LOSS', 'BE', 'OPEN', 'UNKNOWN'].includes(t.result) ? t.result : 'UNKNOWN';
   const gain = Number(String(t.gain_pct??'').trim().replace(',','.'));
   const multiple = Number(String(t.r_multiple??'').trim().replace(',','.'));
-  if (!t.opened_at || !t.asset || !['LONG','SHORT'].includes(t.direction) || String(t.gain_pct??'').trim()==='' || String(t.r_multiple??'').trim()==='' || !Number.isFinite(gain) || !Number.isFinite(multiple)) {
+  const datesAndDirectionOK=Boolean(t.opened_at&&t.asset&&['LONG','SHORT'].includes(t.direction));
+  if ((!allowIncomplete&&!datesAndDirectionOK) || !Number.isFinite(gain) || !Number.isFinite(multiple) ||
+      (!allowIncomplete&&(String(t.gain_pct??'').trim()==='' || String(t.r_multiple??'').trim()===''))) {
     throw new Error('Проверь заполнение сделки');
   }
-  return [String(t.opened_at), t.closed_at || null, String(t.asset).slice(0,48), t.direction,
-    String(t.model || '').slice(0,200), result, gain, multiple, String(t.notes || '').slice(0,10000), type,
+  return [String(t.opened_at||''), t.closed_at || null, String(t.asset||'').slice(0,48), t.direction||'UNKNOWN',
+    String(t.model || '').slice(0,200), result, gain, multiple, String(t.notes || '').slice(0,20000), type,
     t.plan_id ? Number(t.plan_id) : null, t.plan_asset_id ? Number(t.plan_asset_id) : null];
 };
 ipcMain.handle('trades:add', (_, t) => {
@@ -578,9 +856,14 @@ ipcMain.handle('trades:add', (_, t) => {
 ipcMain.handle('trades:update', (_, id, t) => {
   const before=requireCurrentTrade(id);
   if(!before)throw new Error('Сделка не найдена');
-  const values=validTrade(t);
+  const values=validTrade(t,{allowIncomplete:before.source==='notion'});
   db.run(`UPDATE trades SET opened_at=?,closed_at=?,asset=?,direction=?,model=?,result=?,gain_pct=?,
     r_multiple=?,notes=?,trade_type=?,plan_id=?,plan_asset_id=? WHERE id=?`, [...values,Number(id)]);
+  if(before.source==='notion'){
+    // Empty numeric fields remain unknown, even though SQLite stores numeric zero.
+    db.run('UPDATE trades SET percent_known=?,r_known=? WHERE id=?',
+      [Number(t.percent_known)===0?0:1,Number(t.r_known)===0?0:1,Number(id)]);
+  }
   if(before.source==='mt5'){
     const locks=newLocks(before,t);
     const rChanged=Number(t.r_multiple)!==Number(before.r_multiple);
@@ -884,6 +1167,108 @@ function requireBacktestTrade(id){
   const t=run('SELECT t.* FROM backtest_trades t JOIN backtests b ON b.id=t.backtest_id WHERE t.id=? AND b.account_id=?',[Number(id),activeAccountId()])[0];
   if(!t)throw new Error('Строка бектеста не найдена');return t;
 }
+
+function previewBacktestNotion(pending){
+  const {analysis,groups,targetBacktestId,riskPct,filename}=pending;
+  return {
+    canceled:false,filename,riskPct,targetBacktestId,
+    total:analysis.valid.length,duplicateRows:analysis.duplicateRows||0,
+    imagesInZip:analysis.imagesInZip||0,matchedImages:analysis.matchedImages||0,
+    unmatchedImages:analysis.unmatchedImages||0,
+    unmatchedFiles:analysis.unmatchedFiles||[],previewTrades:analysis.previewTrades||[],
+    missing:analysis.incomplete||0,files:analysis.files||[filename],
+    projects:groups.map(g=>({title:g.title,asset:g.asset,style:g.style,year:g.year,count:g.trades.length})),
+    examples:analysis.valid.slice(0,7).map(t=>({date:t.opened_at||'',asset:t.asset,result:t.result,
+      rr:t.r_known?t.r_multiple:null,gain:t.percent_known?t.gain_pct:null}))
+  };
+}
+function prepareBacktestNotion(pending,rawRisk){
+  const riskPct=validNotionRisk(rawRisk);
+  const analysis=analyzeNotionFile(pending.bytes,pending.filename,pending.accountId,riskPct);
+  const groups=groupNotionBacktests(analysis,{fallbackYear:pending.fallbackYear,filename:pending.filename});
+  if(pending.targetBacktestId){
+    const bt=requireBacktest(pending.targetBacktestId);
+    if(groups.length!==1||groups[0].year!==Number(bt.year)||groups[0].asset!==bt.asset.toUpperCase()||groups[0].style!==bt.style)
+      throw new Error('В выбранный бектест можно добавить только сделки того же актива, стиля и года. Выбери импорт в новый бектест.');
+  }
+  return {...pending,riskPct,analysis,groups};
+}
+ipcMain.handle('backtest-notion:preview',async(_,rawRisk,targetId,rawFallbackYear)=>{
+  const year=Number(rawFallbackYear);
+  if(!Number.isInteger(year)||year<2000||year>2100)throw new Error('Укажи год бектеста от 2000 до 2100');
+  const accountId=activeAccountId();
+  if(targetId!=null)requireBacktest(targetId);
+  const selected=await dialog.showOpenDialog({title:'Импорт Notion в Backtest — ZIP или CSV',
+    filters:[{name:'Notion Export ZIP или CSV',extensions:['zip','csv']}],properties:['openFile']});
+  if(selected.canceled||!selected.filePaths?.[0])return {canceled:true};
+  const file=selected.filePaths[0];
+  if(fs.statSync(file).size>220*1024*1024)throw new Error('Архив слишком большой — максимум 220 МБ');
+  const pending={accountId,targetBacktestId:targetId==null?null:Number(targetId),filename:path.basename(file),bytes:fs.readFileSync(file),fallbackYear:year};
+  pendingBacktestNotion=prepareBacktestNotion(pending,rawRisk);
+  return previewBacktestNotion(pendingBacktestNotion);
+});
+ipcMain.handle('backtest-notion:recalculate',(_,rawRisk,rawFallbackYear)=>{
+  if(!pendingBacktestNotion||pendingBacktestNotion.accountId!==activeAccountId())
+    throw new Error('Сначала выбери ZIP или CSV для выбранного счёта');
+  const year=Number(rawFallbackYear);
+  if(!Number.isInteger(year)||year<2000||year>2100)throw new Error('Укажи корректный год');
+  pendingBacktestNotion=prepareBacktestNotion({...pendingBacktestNotion,fallbackYear:year},rawRisk);
+  return previewBacktestNotion(pendingBacktestNotion);
+});
+ipcMain.handle('backtest-notion:import',(_,assignments=[])=>{
+  const p=pendingBacktestNotion;
+  if(!p||p.accountId!==activeAccountId())throw new Error('Сначала проверь ZIP или CSV для текущего счёта');
+  if(!p.groups.length)throw new Error('Нет сделок для импорта');
+  // Groups hold references to analyzed trades, so manual attachments flow through
+  // to the existing SQLite gallery without altering Journal or MT5 history.
+  const manualCount=assignNotionImages(p.analysis,assignments);
+  const byKey=new Map(p.analysis.valid.map(t=>[t.external_key,t]));
+  for(const group of p.groups)for(const trade of group.trades){
+    const original=byKey.get(trade.source_key);
+    if(original?.notionImages)trade.notionImages=original.notionImages;
+  }
+  // Create the backup before opening the SQLite transaction. Never modify live journal trades.
+  const backup=createAutoBackup(true);
+  const created=[],projectIds=[];let imported=0,duplicates=0,imagesAdded=0,imagesDuplicates=0;
+  db.run('BEGIN TRANSACTION');
+  try{
+    for(const group of p.groups){
+      let project=p.targetBacktestId?requireBacktest(p.targetBacktestId):
+        run('SELECT * FROM backtests WHERE account_id=? AND import_collection_key=? LIMIT 1',
+          [p.accountId,group.collectionKey])[0];
+      if(!project){
+        db.run('INSERT INTO backtests(title,style,asset,year,notes,account_id,import_collection_key) VALUES(?,?,?,?,?,?,?)',
+          [group.title,group.style,group.asset,group.year,'Импортировано из Notion ZIP / CSV',p.accountId,group.collectionKey]);
+        const id=run('SELECT last_insert_rowid() AS id')[0].id;
+        project=run('SELECT * FROM backtests WHERE id=?',[id])[0];
+        created.push({id,title:project.title});
+      }
+      projectIds.push(project.id);
+      for(const t of group.trades){
+        const prior=run('SELECT id FROM backtest_trades WHERE backtest_id=? AND source_key=? LIMIT 1',
+          [project.id,t.source_key])[0];
+        let rowId;
+        if(prior){duplicates++;rowId=prior.id;}
+        else{
+          db.run(`INSERT INTO backtest_trades(backtest_id,opened_at,closed_at,direction,model,result,
+            rr,risk_pct,gain_pct,tags,notes,source_key,r_known,percent_known)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            [project.id,t.opened_at,t.closed_at,t.direction==='UNKNOWN'?'UNKNOWN':t.direction,
+             t.model,t.result,t.rr,t.risk_pct,t.gain_pct,t.tags,t.notes,t.source_key,
+             t.r_known?1:0,t.percent_known?1:0]);
+          rowId=run('SELECT last_insert_rowid() AS id')[0].id;imported++;
+        }
+        const attached=saveNotionAttachments('backtest',rowId,t);
+        imagesAdded+=attached.added;imagesDuplicates+=attached.duplicates;
+      }
+    }
+    db.run('COMMIT');persist();
+    const unmatchedImages=pendingBacktestNotion.analysis.unmatchedImages||0;
+    pendingBacktestNotion=null;
+    return {imported,duplicates,imagesAdded,imagesDuplicates,unmatchedImages:Math.max(0,unmatchedImages-manualCount),backup,created,projectIds};
+  }catch(err){try{db.run('ROLLBACK');}catch{}throw err;}
+});
+
 ipcMain.handle('backtests:list',()=>run('SELECT * FROM backtests WHERE account_id=? ORDER BY year DESC,id DESC',[activeAccountId()]));
 ipcMain.handle('backtests:add',(_,p)=>{
   const year=Number(p.year);
@@ -917,8 +1302,8 @@ const allowedBtColumns=['opened_at','closed_at','direction','model','result','ri
 ipcMain.handle('backtest-trades:field',(_,id,column,value)=>{
   const row=requireBacktestTrade(id);
   if(!allowedBtColumns.includes(column))throw new Error('Недопустимое поле');
-  if(column==='direction'&&!['LONG','SHORT'].includes(value))throw new Error('Некорректное направление');
-  if(column==='result'&&!['WIN','LOSS','BE','OPEN'].includes(value))throw new Error('Некорректный результат');
+  if(column==='direction'&&!['LONG','SHORT','UNKNOWN'].includes(value))throw new Error('Некорректное направление');
+  if(column==='result'&&!['WIN','LOSS','BE','OPEN','UNKNOWN'].includes(value))throw new Error('Некорректный результат');
   if(['rr','gain_pct','risk_pct'].includes(column)){
     const entered=String(value??'').trim().replace(/[−–]/g,'-').replace(',', '.');
     if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(entered))
@@ -928,26 +1313,29 @@ ipcMain.handle('backtest-trades:field',(_,id,column,value)=>{
     if(column==='risk_pct'&&(value<0||value>100))throw new Error('Риск должен быть от 0 до 100%');
   }else value=String(value||'').slice(0,column==='notes'?20000:300);
   const idNum=Number(id), risk=Number(row.risk_pct??1), achievedR=Number(row.rr||0);
-  // rr = achieved R on closed rows (and target R on an OPEN row).
-  // gain_pct = rr * risk_pct, never an independent contradictory number.
+  const hasR=row.r_known!==0, hasPercent=row.percent_known!==0;
+  // Never invent 0R or 0% when the imported source was incomplete.
   if(column==='result'){
-    const nextR=value==='BE'?0:value==='LOSS'?-Math.abs(achievedR):value==='WIN'?Math.abs(achievedR):Math.abs(achievedR);
-    db.run('UPDATE backtest_trades SET result=?,rr=?,gain_pct=? WHERE id=?',
-      [value,nextR,value==='OPEN'?0:nextR*risk,idNum]);
+    const nextR=value==='BE'?0:value==='LOSS'?-Math.abs(achievedR):value==='WIN'?Math.abs(achievedR):achievedR;
+    const knownR=value==='BE'?1:Number(hasR);
+    const priceKnown=value==='BE'?1:Number(knownR&&risk>0&&['WIN','LOSS'].includes(value)?1:hasPercent);
+    const nextGain=priceKnown&&knownR&&risk>0?nextR*risk:row.gain_pct;
+    db.run('UPDATE backtest_trades SET result=?,rr=?,gain_pct=?,r_known=?,percent_known=? WHERE id=?',
+      [value,nextR,nextGain,knownR,priceKnown,idNum]);
   }else if(column==='rr'){
-    const nextR=row.result==='WIN'?Math.abs(value):row.result==='LOSS'?-Math.abs(value):row.result==='BE'?0:Math.abs(value);
-    db.run('UPDATE backtest_trades SET rr=?,gain_pct=? WHERE id=?',
-      [nextR,row.result==='OPEN'?0:nextR*risk,idNum]);
+    const nextR=row.result==='WIN'?Math.abs(value):row.result==='LOSS'?-Math.abs(value):row.result==='BE'?0:value;
+    const priced=risk>0&&['WIN','LOSS','BE'].includes(row.result);
+    db.run('UPDATE backtest_trades SET rr=?,gain_pct=?,r_known=1,percent_known=? WHERE id=?',
+      [nextR,priced?nextR*risk:row.gain_pct,priced?1:Number(hasPercent),idNum]);
   }else if(column==='risk_pct'){
-    db.run('UPDATE backtest_trades SET risk_pct=?,gain_pct=? WHERE id=?',
-      [value,row.result==='OPEN'?0:achievedR*value,idNum]);
+    const priced=Number(hasR)&&value>0&&['WIN','LOSS','BE'].includes(row.result);
+    db.run('UPDATE backtest_trades SET risk_pct=?,gain_pct=?,percent_known=? WHERE id=?',
+      [value,priced?achievedR*value:row.gain_pct,priced?1:Number(hasPercent),idNum]);
   }else if(column==='gain_pct'){
     if(row.result==='OPEN')throw new Error('Сначала закрой сделку — у открытой позиции нет реализованной прибыли');
-    if(risk===0&&value!==0)throw new Error('Укажи риск больше 0%, чтобы рассчитать RR');
-    // Editing realized Gain updates both RR and the outcome chip.
     const nextResult=value>0?'WIN':value<0?'LOSS':'BE';
-    db.run('UPDATE backtest_trades SET gain_pct=?,rr=?,result=? WHERE id=?',
-      [value,risk>0?value/risk:0,nextResult,idNum]);
+    db.run('UPDATE backtest_trades SET gain_pct=?,rr=?,result=?,percent_known=1,r_known=? WHERE id=?',
+      [value,risk>0?value/risk:row.rr,nextResult,risk>0?1:Number(hasR),idNum]);
   }else{
     db.run('UPDATE backtest_trades SET '+column+'=? WHERE id=?',[value,idNum]);
   }

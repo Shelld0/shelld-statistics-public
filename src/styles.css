@@ -850,3 +850,10 @@ tr[data-trade-row]:hover{background:var(--hover)}
 @media (min-width:1900px){.app-main{max-width:1220px!important;width:calc(100% - 420px)!important}.app-main:has(#backtestWorkspace:not(.hidden)){max-width:1380px!important;width:calc(100% - 420px)!important}}
 @media (max-width:1200px){.app-main,.app-main:has(#backtestWorkspace:not(.hidden)){width:calc(100% - 48px)!important;max-width:none!important}#backtestWorkspace .backtest-statbar{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media (max-width:760px){.app-main,.app-main:has(#backtestWorkspace:not(.hidden)){width:calc(100% - 24px)!important}#dashboard .chart-card,#journal .journal-chart,#backtestWorkspace .bt-curve-card{max-width:none!important}.chart-wrap,#backtestWorkspace .bt-curve-card .chart-wrap{height:270px!important}#backtestWorkspace .backtest-statbar{grid-template-columns:1fr!important}}
+
+/* Imported CSV records with no verified status should never look like closed positions. */
+.pill.UNKNOWN{background:rgba(128,140,160,.12);color:var(--muted);border:1px solid var(--border);}
+
+/* Public v1.0.4: GER40 has a distinct BLUE instrument badge only. Keep US100/NAS100 teal and the rest of the UI unchanged. */
+.pill.GER40{background:#142f70;color:#9dc1ff;border-color:#386fe288;box-shadow:0 0 13px #3d78fa35}
+:root.light .pill.GER40{background:#dceaff;color:#2256b2;border-color:#91b5ee;box-shadow:0 0 11px #4c88e71f}

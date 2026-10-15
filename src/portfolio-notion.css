@@ -1,0 +1,82 @@
+/* v1.0.2: prop phases, account capitals and native Notion CSV import. */
+#accountBasis,#newAccountBasis{appearance:textfield;-moz-appearance:textfield;font-variant-numeric:tabular-nums}
+#accountBasis::-webkit-inner-spin-button,#accountBasis::-webkit-outer-spin-button{display:none}
+.account-groups-panel{border-top:1px solid var(--border);padding-top:21px;margin:22px 0 8px}
+.account-groups-heading h3{font-size:14px;margin:0 0 4px}
+.account-groups-heading small,.portfolio-footnote{color:var(--muted);font-size:11px;line-height:1.6}
+.portfolio-group-list{display:grid;gap:8px;margin:12px 0}
+.portfolio-group-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel2)}
+.portfolio-group-item>span{flex:1;font-weight:650;font-size:12px;overflow-wrap:anywhere}
+.portfolio-group-item small{display:block;color:var(--muted);font-size:10px;font-weight:400}
+.portfolio-group-item .secondary{padding:6px 10px}
+.portfolio-empty{color:var(--muted);font-size:11px}
+.portfolio-group-form{display:grid;gap:11px;margin-top:12px}
+.portfolio-group-form>input{width:100%;border:1px solid var(--border);border-radius:9px;background:var(--panel2);color:var(--text);padding:12px}
+.portfolio-members{display:flex;flex-wrap:wrap;gap:8px}
+.portfolio-member{display:flex;gap:8px;align-items:center;padding:8px 11px;border-radius:9px;background:var(--panel2);border:1px solid var(--border);font-size:11px;cursor:pointer}
+.portfolio-member input{accent-color:#df5969}
+.portfolio-group-form .secondary{justify-self:start}
+.portfolio-footnote{margin:11px 0 0}
+.portfolio-view-notice{border:1px solid #56708c55;border-radius:11px;color:var(--text);font-size:12px;background:var(--panel2);padding:12px 18px;margin:0 0 18px}
+.notion-import-modal{width:min(720px,95vw)}
+.notion-description{padding:13px 16px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;font-size:12px;line-height:1.65;color:var(--muted)}
+.notion-preview{min-height:45px;padding:10px 0;font-size:12px;color:var(--muted)}
+.notion-preview-table{min-width:0;width:100%;font-size:11px}
+.notion-preview-table td{white-space:nowrap}
+.notion-preview-table th{font-size:10px}
+.notion-error{color:var(--red)}
+#notionImportConfirm:disabled{opacity:.4;cursor:not-allowed}
+:root.light .portfolio-group-item,:root.light .notion-description{background:#f5f6f8}
+
+.portfolio-row-account{display:block;margin-top:4px;color:var(--muted);font-size:10px;font-weight:500;white-space:nowrap}
+
+/* v0.8.10: group overview is non-blocking. Working account remains editable. */
+.portfolio-asset-stack{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:max-content}
+.portfolio-row-account{display:block;position:static;margin:2px auto 0;text-align:center;font-size:10px;line-height:1.45;max-width:130px;overflow-wrap:anywhere;white-space:normal;color:var(--muted)}
+/* v0.8.12: group-specific options live in a small header popover. */
+.group-settings-holder{position:relative;display:flex;align-items:center;flex:0 0 auto}
+.group-settings-holder.hidden{display:none!important}
+.group-settings-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--muted);cursor:pointer;transition:border-color .2s,background .2s,color .2s}
+.group-settings-btn:hover,.group-settings-btn[aria-expanded="true"]{color:var(--text);border-color:#6e788a;background:var(--panel)}
+.group-settings-btn:focus-visible{outline:2px solid #8e9cac;outline-offset:2px}
+.group-settings-popover{position:absolute;top:calc(100% + 12px);right:0;z-index:201;width:270px;padding:15px 16px;border-radius:13px;border:1px solid var(--border);background:var(--panel);box-shadow:0 18px 56px #0009;animation:group-pop-in .16s ease both}
+.group-settings-popover.hidden{display:none!important}
+.group-settings-toggle{display:flex;align-items:center;justify-content:space-between;gap:15px;cursor:pointer;font-size:12px;font-weight:700;line-height:1.4;color:var(--text)}
+.group-settings-toggle small{display:block;font-size:11px;color:var(--muted);font-weight:450;margin-top:4px}
+.group-settings-toggle input{appearance:none;flex:0 0 auto;position:relative;width:37px;height:21px;border-radius:20px;background:var(--border);border:1px solid #7a808b66;cursor:pointer;transition:background .18s}
+.group-settings-toggle input::after{content:"";position:absolute;left:2px;top:2px;width:15px;height:15px;background:#e9eef5;border-radius:50%;transition:transform .18s;box-shadow:0 1px 3px #0008}
+.group-settings-toggle input:checked{background:#3d9b7d}
+.group-settings-toggle input:checked::after{transform:translateX(16px)}
+.group-settings-toggle input:focus-visible{outline:2px solid #8e9cac;outline-offset:2px}
+@keyframes group-pop-in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.group-manager-controls{display:grid;gap:12px;background:var(--panel2);border-radius:12px;border:1px solid var(--border);padding:17px;margin-bottom:21px}
+.group-manager-controls.hidden{display:none!important}
+.group-manager-head strong{display:block;font-size:14px;margin-bottom:5px}
+.group-manager-head span{font-size:11px;color:var(--muted)}
+.group-manager-row{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
+.group-manager-row label{display:flex;flex:1 1 235px;flex-direction:column;gap:6px;color:var(--muted);font-size:11px}
+.group-manager-row select{width:100%;padding:10px 12px;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:9px;font-size:12px}
+.group-manager-row .secondary{min-height:37px;font-size:11px}
+@media(max-width:780px){.group-settings-popover{right:-70px;max-width:calc(100vw - 20px)}}
+@media(prefers-reduced-motion:reduce){.group-settings-popover{animation:none}.group-settings-toggle input,.group-settings-toggle input::after{transition:none}}
+.portfolio-view-notice{position:fixed;z-index:10012;bottom:28px;right:28px;width:min(490px,calc(100vw - 40px));margin:0;padding:15px 18px;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 48px #0008;opacity:0;transform:translateY(15px);transition:opacity .24s ease,transform .24s ease;pointer-events:none;font-size:12px;line-height:1.5}
+.portfolio-view-notice.is-visible{opacity:1;transform:translateY(0)}
+#cleanupEmptyDuplicatesBtn{margin-right:auto}
+
+
+/* v0.8.13: account identity is separated from MT5 terminal setup. */
+.account-mt5-hint,.account-mt5-currency{font:400 12px/1.65 Inter,sans-serif;color:var(--muted,#94a0b2);background:var(--surface2,#13161b);border:1px solid var(--border,#30343c);border-radius:12px;padding:12px 14px;margin:2px 0 0}
+.account-mt5-hint strong{color:var(--text,#e9eef6);font-weight:700}
+#mt5Basis+small{display:block;margin-top:6px;color:var(--muted,#94a0b2);font-size:11px;line-height:1.5}
+
+/* Notion ZIP import: compact risk control with no browser number steppers. */
+.notion-import-risk{display:flex;flex-direction:column;gap:9px;padding:14px 15px;margin-top:12px;border:1px solid var(--border,#2b3039);border-radius:12px;background:var(--surface,#121419)}
+.notion-import-risk label{font-size:12px;font-weight:700;color:var(--text,#e6e9f1)}
+.notion-import-risk input{max-width:220px;min-height:39px;padding:9px 12px;border:1px solid var(--border,#30343c);background:var(--input-bg,#191b20);border-radius:8px;color:var(--text,#e6e9f1);font-family:inherit}
+.notion-import-risk p{margin:0;color:var(--muted,#9398a4);font-size:11px;line-height:1.55}
+
+/* Offline Notion file-import convenience. Manual preview remains available. */
+.notion-autoimport{display:flex;align-items:center;gap:10px;margin:10px 0 2px;
+  padding:10px 13px;border:1px solid var(--border);background:var(--panel2);
+  border-radius:10px;color:var(--text);font-size:12px;cursor:pointer}
+.notion-autoimport input[type="checkbox"]{width:16px;height:16px;accent-color:#b3bbc9;cursor:pointer;flex-shrink:0}

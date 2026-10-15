@@ -26,7 +26,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const fmt = n => `${Number(n) >= 0 ? '+' : ''}${Number(n || 0).toFixed(1)}%`;
 const dateValue = t => t.closed_at || t.opened_at;
 const tradeTime = t => new Date(dateValue(t)).getTime() || 0;
-const dateFmt = s => s ? new Date(s).toLocaleString('ru-RU',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+const dateFmt = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s||'')) ? String(s).split('-').reverse().join('.')+' (время не указано)' : s && !Number.isNaN(new Date(s).getTime()) ? new Date(s).toLocaleString('ru-RU',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
 const pill = (v, cls = v) => `<span class="pill ${esc(cls)}">${esc(v)}</span>`;
 const chrono = list => [...list].sort((a,b) => tradeTime(a) - tradeTime(b) || a.id - b.id);
 const closedTrades = list => list.filter(t => window.ShelldStats.isClosed(t));
@@ -38,7 +38,7 @@ const orderedJournalTrades=() => [...trades].sort((a,b)=>{
 });
 const tradeNumber = id => orderedJournalTrades().findIndex(t=>Number(t.id)===Number(id))+1;
 let toastTimer;
-function toast(message) { const el=$('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),3500); }
+function toast(message,duration=3500) { const el=$('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),Math.max(1000,Math.min(12000,duration))); }
 async function safe(action) { try { return await action(); } catch(e) { toast('Ошибка: '+(e?.message || String(e))); return null; } }
 function switchPage(id) {
   $$('.page').forEach(p=>p.classList.toggle('active',p.id===id));
@@ -61,6 +61,7 @@ function closeTopModal() {
   }
 }
 function closeModals() { $$('.modal-backdrop').forEach(m=>m.classList.remove('open')); modalStack.length=0; }
+function closeSpecificModal(id) { const element=$('#'+id);element?.classList.remove('open');for(let i=modalStack.length-1;i>=0;i--)if(modalStack[i]===id)modalStack.splice(i,1); }
 $$('[data-close]').forEach(b=>b.addEventListener('click',closeTopModal));
 // Clicking the dimmed background never discards a trade or its unsaved notes.
 document.addEventListener('keydown',e=>{
@@ -81,7 +82,8 @@ function updateTradeDateButtons(){
 }
 function newTrade() {
   editingTradeId=null;pendingTradeResultImages=[];
-  const f=$('#tradeForm');f.reset(); f.elements.opened_at.value=toLocalInput(new Date());
+  const f=$('#tradeForm');f.reset();delete f.dataset.notionDateOnlyOpened; f.elements.opened_at.value=toLocalInput(new Date());
+  f.elements.asset.value='EURUSD';f.elements.direction.value='LONG';f.elements.result.value='WIN';
   f.elements.trade_type.value='Swing';
   updateTradeDateButtons();
   updateTradePlanOptions('', '');
@@ -92,6 +94,7 @@ function newTrade() {
 $$('[data-add]').forEach(b=>b.addEventListener('click',newTrade));
 function normalizeTrade(form) {
   const t = Object.fromEntries(new FormData(form).entries());
+  if(!t.opened_at&&form.dataset.notionDateOnlyOpened)t.opened_at=form.dataset.notionDateOnlyOpened;
   const parseSigned=(value,label)=>{
     const raw=String(value??'').trim().replace(',','.');
     if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw))throw new Error(`Проверь поле «${label}»: введи число, например -1 или 2.5`);
@@ -100,8 +103,13 @@ function normalizeTrade(form) {
     return number;
   };
   // Preserve user-entered signs regardless of WIN/LOSS; do not force Math.abs().
-  t.gain_pct=parseSigned(t.gain_pct,'Результат (%)');
-  t.r_multiple=parseSigned(t.r_multiple,'Результат (R)');
+  const imported=editingTradeId!=null&&trades.some(x=>Number(x.id)===Number(editingTradeId)&&x.source==='notion');
+  const rawGain=String(t.gain_pct??'').trim(),rawR=String(t.r_multiple??'').trim();
+  t.percent_known=rawGain?1:0;
+  t.r_known=rawR?1:0;
+  if(!imported&&(!rawGain||!rawR))throw new Error('Заполни процент и R сделки');
+  t.gain_pct=rawGain?parseSigned(rawGain,'Результат (%)'):0;
+  t.r_multiple=rawR?parseSigned(rawR,'Результат (R)'):0;
   t.plan_id=t.plan_id||null; t.plan_asset_id=t.plan_asset_id||null;
   return t;
 }
@@ -157,6 +165,10 @@ function attachTradeRowHandlers(container) {
   container.addEventListener('click',e=>{
     const remove=e.target.closest('[data-delete]');
     if(remove){e.stopPropagation();safe(async()=>{
+      const entry=trades.find(t=>Number(t.id)===Number(remove.dataset.delete));
+      if(window.shelldGroupViewId?.() && Number(entry?.account_id)!==Number(window.shelldPortfolioWorkAccountId)){
+        toast('Выбери счёт этой сделки как рабочий перед удалением');return;
+      }
       if(confirm('Удалить эту сделку и прикреплённые скриншоты?')){
         await window.shelld.deleteTrade(Number(remove.dataset.delete));await refresh();toast('Сделка удалена');
       }
@@ -173,9 +185,9 @@ function rowsHtml(list,full=false){
   return list.map(t=>`<tr data-trade-row="${Number(t.id)}" tabindex="0" title="Открыть сделку №${tradeNumber(t.id)}">
     <td>#${tradeNumber(t.id)}</td><td>${esc(dateFmt(t.opened_at))}</td><td>${esc(dateFmt(t.closed_at))}</td>
     ${full?`<td class="journal-duration" title="Время между открытием и закрытием">${esc(holdingTime(t.opened_at,t.closed_at))}</td>`:''}
-    <td>${pill(t.asset,t.asset)}</td><td>${pill(t.direction,t.direction)}</td><td>${esc(t.model==='MT5'?'—':(t.model||'—'))}</td>
-    <td>${pill(resolvedStatus(t),resolvedStatus(t))}</td><td class="gain ${Number(t.gain_pct)>=0?'green':'red'}" ${t.result==='OPEN'&&t.source==='mt5'?'title="Плавающий P&L относительно указанной базы капитала. Обновляется при синхронизации MT5."':''}>${t.percent_known===0?esc(String(t.profit_money??''))+' '+esc(t.profit_currency||'')+' · % —':fmt(t.gain_pct)}</td>
-    ${full?`<td><button type="button" class="delete-btn" data-delete="${t.id}" title="Удалить сделку">×</button></td>`:''}
+    <td><div class="portfolio-asset-stack">${pill(t.asset||'—',t.asset||'UNKNOWN')}${window.shelldGroupViewId?.()&&window.shelldShowGroupAccountLabels!==false&&t.account_label?`<small class="portfolio-row-account">${esc(t.account_label)}</small>`:''}</div></td><td>${pill(t.direction,t.direction)}</td><td>${esc(t.model==='MT5'?'—':(t.model||'—'))}</td>
+    <td>${pill(resolvedStatus(t),resolvedStatus(t))}</td><td class="gain ${Number(t.percent_known)===0?(t.source==='mt5'?(Number(t.profit_money)>=0?'green':'red'):''):(Number(t.gain_pct)>=0?'green':'red')}" ${t.result==='OPEN'&&t.source==='mt5'?'title="Плавающий P&L относительно указанной базы капитала. Обновляется при синхронизации MT5."':''}>${t.percent_known===0?(t.source==='mt5'?esc(String(t.profit_money??''))+' '+esc(t.profit_currency||'')+' · % —':'—'):fmt(t.gain_pct)}</td>
+    ${full?`<td>${window.shelldGroupViewId?.()&&Number(t.account_id)!==Number(window.shelldPortfolioWorkAccountId)?'':'<button type="button" class="delete-btn" data-delete="'+t.id+'" title="Удалить сделку">×</button>'}</td>`:''}
     </tr>`).join('');
 }
 function filteredTrades(){
@@ -390,6 +402,14 @@ $('#screenshotTfForm').addEventListener('submit',event=>{event.preventDefault();
   }
 });});
 async function openDetails(id){
+  if(window.shelldGroupViewId?.()){
+    const match=trades.find(x=>Number(x.id)===Number(id));
+    if(!match){toast('Сделка группы не найдена');return;}
+    if(Number(match.account_id)!==Number(window.shelldPortfolioWorkAccountId)){
+      const switched=await window.shelldSwitchToTradeAccount(match); // ask before interrupting a live MT5 connection
+      if(switched===false)return;
+    }
+  }
   await safe(async()=>{
     const t=trades.find(x=>Number(x.id)===Number(id));if(!t){toast('Сделка не найдена');return;}
     detailTradeId=t.id;
@@ -625,10 +645,14 @@ $('#detailCloseBtn').addEventListener('click',closeModals);
 $('#detailEditBtn').addEventListener('click',()=>{
   const t=trades.find(x=>Number(x.id)===Number(detailTradeId));if(!t)return;
   closeModals();editingTradeId=t.id;
-  const f=$('#tradeForm');f.reset();
+  const f=$('#tradeForm');f.reset();delete f.dataset.notionDateOnlyOpened;
+  if(t.source==='notion'&&/^\d{4}-\d{2}-\d{2}$/.test(String(t.opened_at||'')))f.dataset.notionDateOnlyOpened=t.opened_at;
   if(!Array.from(f.elements.asset.options).some(o=>o.value===t.asset))f.elements.asset.add(new Option(t.asset,t.asset));
   for(const key of ['opened_at','closed_at','asset','direction','model','result','gain_pct','r_multiple','notes','trade_type']){
-    if(f.elements[key])f.elements[key].value=(key==='model'&&t[key]==='MT5')?'':(t[key]??(key==='trade_type'?'Swing':''));
+    if(!f.elements[key])continue;
+    const unknownNumber=t.source==='notion' &&
+      ((key==='gain_pct'&&Number(t.percent_known)===0)||(key==='r_multiple'&&Number(t.r_known)===0));
+    f.elements[key].value=unknownNumber?'':((key==='opened_at'&&f.dataset.notionDateOnlyOpened)?'':((key==='model'&&t[key]==='MT5')?'':(t[key]??(key==='trade_type'?'Swing':''))));
   }
   updateTradeDateButtons();
   updateTradePlanOptions(t.plan_id||'',t.plan_asset_id||'');
@@ -639,7 +663,7 @@ $('#detailEditBtn').addEventListener('click',()=>{
 });
 async function refresh(){
   [trades,plans,weeklyPlans,backtests]=await Promise.all([
-    window.shelld.listTrades(),window.shelld.listPlans(),window.shelld.listWeeklyPlans(),window.shelld.listBacktests()]);
+    window.shelldGroupViewId?.()?window.shelld.listGroupTrades(window.shelldGroupViewId()):window.shelld.listTrades(),window.shelld.listPlans(),window.shelld.listWeeklyPlans(),window.shelld.listBacktests()]);
   const assetPairs=await Promise.all(weeklyPlans.map(async p=>[Number(p.id),await window.shelld.listWeeklyAssets(p.id)]));
   weeklyAssetCache=new Map(assetPairs);
   if(!$('#tradeModal').classList.contains('open'))updateTradePlanOptions('','');
@@ -969,7 +993,7 @@ let btDateCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1);
 let btDateSelected='';
 const pad2=n=>String(n).padStart(2,'0');
 const dateParts=iso=>{
-  const match=/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/.exec(String(iso||''));
+  const match=/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?$/.exec(String(iso||''));
   if(!match)return null;
   return {year:Number(match[1]),month:Number(match[2]),day:Number(match[3]),hour:Number(match[4]||0),minute:Number(match[5]||0)};
 };
@@ -1220,10 +1244,10 @@ async function renderBacktestTable(){
     <td class="bt-holding-time" title="Время между открытием и закрытием">${esc(holdingTime(t.opened_at,t.closed_at))}</td>
     <td>${sideButtons(t.direction)}</td>
     <td><input aria-label="Модель" data-bt-field="model" value="${esc(t.model)}" placeholder="FVG / OB"></td>
-    <td><select class="bt-result-select bt-result-${resolvedStatus(t)}" aria-label="Result" data-bt-field="result">${options(['WIN','LOSS','BE','OPEN'],resolvedStatus(t))}</select></td>
-    <td><input class="bt-decimal-input" aria-label="RR" title="OPEN: целевой RR; WIN/LOSS/BE: реализованный RR" type="text" inputmode="decimal" spellcheck="false" autocomplete="off" data-bt-field="rr" value="${t.rr}"></td>
-    <td><input class="bt-decimal-input" aria-label="Риск в процентах" type="text" inputmode="decimal" spellcheck="false" autocomplete="off" data-bt-field="risk_pct" value="${t.risk_pct??1}"></td>
-    <td>${t.result==='OPEN'?'<span class="bt-open-gain" title="Открытая сделка — прибыль ещё не реализована">—</span>':`<input class="bt-decimal-input" aria-label="Результат в процентах" title="Изменение Gain пересчитывает RR и статус сделки" type="text" inputmode="decimal" spellcheck="false" autocomplete="off" data-bt-field="gain_pct" value="${t.gain_pct}">`}</td>
+    <td><select class="bt-result-select bt-result-${resolvedStatus(t)}" aria-label="Result" data-bt-field="result">${options(['WIN','LOSS','BE','OPEN','UNKNOWN'],resolvedStatus(t))}</select></td>
+    <td><input class="bt-decimal-input" aria-label="RR" title="OPEN: целевой RR; WIN/LOSS/BE: реализованный RR" type="text" inputmode="decimal" spellcheck="false" autocomplete="off" data-bt-field="rr" value="${t.r_known===0?'':t.rr}" placeholder="—"></td>
+    <td><input class="bt-decimal-input" aria-label="Риск в процентах" type="text" inputmode="decimal" spellcheck="false" autocomplete="off" data-bt-field="risk_pct" value="${(t.risk_pct ?? 1) || ''}" placeholder="—"></td>
+    <td>${['OPEN','UNKNOWN'].includes(t.result)?'<span class="bt-open-gain" title="Открытая сделка — прибыль ещё не реализована">—</span>':`<input class="bt-decimal-input" aria-label="Результат в процентах" title="Изменение Gain пересчитывает RR и статус сделки" type="text" inputmode="decimal" spellcheck="false" autocomplete="off" data-bt-field="gain_pct" value="${t.percent_known===0?'':t.gain_pct}" placeholder="—">`}</td>
     <td><div class="tag-cell">${tagPills(t.tags)}<button class="mini-add-btn" type="button" data-open-bt-row="${t.id}">＋</button></div></td>
     <td><button class="row-details" type="button" data-open-bt-row="${t.id}">▧ Анализ / Фото</button></td>
     <td><button class="delete-btn" type="button" data-delete-bt-row="${t.id}">×</button></td></tr>`).join('')||'<tr><td colspan="13" class="empty">Нажми «Add Trade», чтобы добавить первую строку.</td></tr>';
@@ -1353,15 +1377,16 @@ $('#beSettingsForm').addEventListener('submit',e=>{e.preventDefault();safe(async
   toast('Диапазон BE сохранён');
 });});
 
-window.refresh=refresh;window.openModal=openModal;window.switchShelldPage=switchPage;
+window.refresh=refresh;window.openModal=openModal;window.switchShelldPage=switchPage;window.openImportedBacktest=openBacktestWorkspace;window.shelldCurrentBacktest=()=>selectedBacktestId;window.shelldToast=toast;window.shelldCloseModal=closeSpecificModal;
 window.openShelldTradeDetails=openDetails;
 window.shelldBeSettings=()=>beSettings;
-window.resetShelldAfterAccountSwitch=async()=>{
+window.resetShelldAfterAccountSwitch=async(preservePage=false)=>{
+  const previousPage=preservePage?document.querySelector('.page.active')?.id:null;
   selectedWeekId=null;selectedWeekAssetId=null;selectedBacktestId=null;selectedBacktestRowId=null;
   initialPeriodSelected=false;closeModals();
   $('#weeklyPlanOverview').classList.remove('hidden');$('#weeklyPlanWorkspace').classList.add('hidden');
   $('#backtestOverview').classList.remove('hidden');$('#backtestWorkspace').classList.add('hidden');
-  switchPage('dashboard');await refresh();
+  switchPage(previousPage||'dashboard');await refresh();
 };
 attachTradeRowHandlers($('#recentRows'));attachTradeRowHandlers($('#tradeRows'));
 (async()=>{await safe(async()=>{

@@ -50,11 +50,12 @@
   form.addEventListener('submit',async e=>{
     e.preventDefault();
     const base=by('mt5Basis').value.trim().replace(',','.');
-    if(base&&(!Number.isFinite(Number(base))||Number(base)<=0)){
-      setMessage('База капитала должна быть положительным числом',true);return;
+    if(!base||!Number.isFinite(Number(base))||Number(base)<=0){
+      setMessage('Для подключения MT5 обязательно укажи базу капитала (например, 10000)',true);return;
     }
     const config={
       login:by('mt5Login').value.trim(),server:by('mt5Server').value.trim(),
+      broker:by('mt5Broker').value.trim(),
       password:by('mt5Password').value,terminal:by('mt5Terminal').value.trim(),
       python:by('mt5Python').value.trim(),days:Number(by('mt5Days').value),
       basis:base?Number(base):0,auto:by('mt5Auto').checked,
@@ -78,6 +79,7 @@
     await update();
   });
   window.addEventListener('pagehide',()=>{by('mt5Password').value='';});
+  window.addEventListener('shelld-account-changed',()=>update());
   update();
 })();
 
@@ -85,11 +87,13 @@
 window.addEventListener('shelld-account-changed',async event=>{
  const a=event.detail?.profile||{};
  const by=id=>document.getElementById(id);
+ by('mt5Broker').value=a.broker==='Manual'?'':(a.broker||'');
  by('mt5Login').value=a.mt5_login||'';
  by('mt5Server').value=a.mt5_server||'';
  by('mt5Python').value=a.mt5_python==='py'?'':(a.mt5_python||'');
  by('mt5Terminal').value=a.mt5_terminal||'';
- by('mt5Basis').value=a.mt5_basis||'';
+ by('mt5Basis').value=Number(a.mt5_basis)>0?String(a.mt5_basis):'';
+ by('mt5CurrencyNote').textContent=`Валюта счёта: ${a.currency||'EUR'}. Проверяется по данным терминала MT5.`;
  by('mt5Days').value=String(a.mt5_days||365);
  by('mt5Auto').checked=Boolean(a.mt5_auto);
  by('mt5Password').value='';

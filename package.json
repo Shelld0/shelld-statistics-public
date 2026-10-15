@@ -1,7 +1,7 @@
 {
   "name": "shelld-statistics",
-  "version": "1.0.1",
-  "description": "Shelld Statistics Public Beta — single-install Windows trading journal with optional built-in MT5 bridge",
+  "version": "1.0.4",
+  "description": "Shelld Statistics Public Beta v1.0.4 — Trading Journal, Backtest, Notion ZIP image importer, GER40 blue badges",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",

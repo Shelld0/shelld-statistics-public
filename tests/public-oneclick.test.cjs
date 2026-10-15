@@ -29,9 +29,11 @@ test('Unpackaged development mode retains py launcher behavior',()=>{
   assert.equal(p.executable,'py');
   assert.deepEqual(p.args,['-3',script]);
 });
-test('Packaging includes bridge in resources and Windows CI invokes build',()=>{
+test('Public edition packages the optional embedded MT5 bridge',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-  assert.equal(pkg.version,'1.0.1');
+  assert.equal(pkg.version,'1.0.4');
+  assert.equal(pkg.build.productName,'Shelld Statistics Public Beta');
+  assert.equal(pkg.build.appId,'com.shelld.statistics.publicbeta');
   assert.equal(pkg.build.extraResources[0].to,'mt5/shelld-mt5-bridge.exe');
   assert.match(pkg.scripts.dist,/prepare:bridge/);
   assert.match(fs.readFileSync(path.join(root,'src','main.js'),'utf8'),/selectMt5Bridge/);

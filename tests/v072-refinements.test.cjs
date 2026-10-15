@@ -24,11 +24,11 @@ function change(column,value,row={id:7,result:'WIN',rr:2,risk_pct:1,gain_pct:2})
 }
 test('Backtest decimal fields accept comma, dot and signed values',()=>{
   const risk=change('risk_pct','1,5');
-  assert.deepEqual([...risk.args],[1.5,3,7]);
+  assert.deepEqual([...risk.args],[1.5,3,1,7]);
   const loss=change('gain_pct','-0,7');
-  assert.deepEqual([...loss.args],[-0.7,-0.7,'LOSS',7]);
+  assert.deepEqual([...loss.args],[-0.7,-0.7,'LOSS',1,7]);
   const minus=change('gain_pct','−0,5');
-  assert.deepEqual([...minus.args],[-0.5,-0.5,'LOSS',7]);
+  assert.deepEqual([...minus.args],[-0.5,-0.5,'LOSS',1,7]);
   assert.throws(()=>change('risk_pct',''),/Введите число/);
   assert.throws(()=>change('risk_pct','-10'),/Риск должен быть/);
   assert.throws(()=>change('rr','abc'),/Введите число/);

@@ -38,7 +38,7 @@
     const runs=BE?BE.streaks(Array.isArray(rows)?rows:[],settings):{maxWin:0,maxLoss:0};
     return {
       ...runs,rows:all, closed, wins, losses, breakEven,
-      tradeCount:all.length, closedCount:closed.length, openCount:all.length-closed.length,
+      tradeCount:all.length, closedCount:closed.length, openCount:all.filter(t=>String(t.result).toUpperCase()==='OPEN').length, unknownCount:all.filter(t=>String(t.result).toUpperCase()==='UNKNOWN').length,
       pricedCount:priced.length, unpricedCount:closed.length-priced.length,
       rKnownCount:withR.length, winsWithKnownR:winsWithR.length,
       winCount:wins.length, lossCount:losses.length, beCount:breakEven.length,
