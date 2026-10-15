@@ -9,6 +9,8 @@ dist/
 *.log
 *.tmp
 *.zip
+# Tracked miniature Notion ZIP test fixtures are required by GitHub Actions.
+!tests/fixtures/*.zip
 *.bin
 mt5-secret-*
 .env*
